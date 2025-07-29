@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon売上利益計算システム（完全版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff9a56 0%, #ffad46 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 40px;
+        }
+        
+        .upload-section {
+            margin-bottom: 40px;
+        }
+        
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-item {
+            border: 2px dashed #ddd;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .upload-item:hover {
+            border-color: #667eea;
+            background: #f0f7ff;
+        }
+        
+        .upload-item.has-file {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        .upload-item h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .file-label:hover {
+            background: #5a67d8;
+        }
+        
+        .file-name {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .button-section {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 180px;
+        }
+        
+        .btn-validate {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-validate:hover {
+            background: #138496;
+        }
+        
+        .btn-calculate {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-calculate:hover {
+            background: #218838;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .results-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .summary-card h3 {
+            color: #667eea;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .summary-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .monthly-results {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .monthly-results h3 {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        
+        .month-item {
+            border-bottom: 1px solid #eee;
+            padding: 20px;
+        }
+        
+        .month-item:last-child {
+            border-bottom: none;
+        }
+        
+        .month-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .month-data {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .data-label {
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .data-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-section {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .month-data {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Amazon売上利益計算システム</h1>
+            <p>複数のAmazonアカウントと販路のCSVデータを統合し、月次利益を自動計算</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">📁 CSVファイルをアップロード</h2>
+                
+                <div class="upload-grid">
+                    <div class="upload-item" id="upload-makad-a-m">
+                        <h3>マカド売上データ (A-M)</h3>
+                        <input type="file" class="file-input" id="file-makad-a-m" accept=".csv">
+                        <label for="file-makad-a-m" class="file-label">ファイルを選択</label>
+                        <div class="file-name" id="name-makad-a-m"></div>
+                    </div>
+                    
+                    <div class="upload-item" id="upload-mercari-a-m">
+                        <h3>メルカリショップ売上データ (A-M)</h3>
+                        <input type="file" class="file-input" id="file-mercari-a-m" accept=".csv">
+                        <label for="file-mercari-a-m" class="file-label">ファイルを選択</label>
+                        <div class="file-name" id="name-mercari-a-m"></div>
+                    </div>
+                    
+                    <div class="upload-item" id="upload-hanro-a-m">
+                        <h3>販路プラス売上データ (A-M)</h3>
+                        <input type="file" class="file-input" id="file-hanro-a-m" accept=".csv">
+                        <label for="file-hanro-a-m" class="file-label">ファイルを選択</label>
+                        <div class="file-name" id="name-hanro-a-m"></div>
+                    </div>
+                    
+                    <div class="upload-item" id="upload-makad-o-aa">
+                        <h3>マカド売上データ (O-AA)</h3>
+                        <input type="file" class="file-input" id="file-makad-o-aa" accept=".csv">
+                        <label for="file-makad-o-aa" class="file-label">ファイルを選択</label>
+                        <div class="file-name" id="name-makad-o-aa"></div>
+                    </div>
+                    
+                    <div class="upload-item" id="upload-mercari-o-aa">
+                        <h3>メルカリショップ売上データ (O-AA)</h3>
+                        <input type="file" class="file-input" id="file-mercari-o-aa" accept=".csv">
+                        <label for="file-mercari-o-aa" class="file-label">ファイルを選択</label>
+                        <div class="file-name" id="name-mercari-o-aa"></div>
+                    </div>
+                    
+                    <div class="upload-item" id="upload-hanro-o-aa">
+                        <h3>販路プラス売上データ (O-AA)</h3>
+                        <input type="file" class="file-input" id="file-hanro-o-aa" accept=".csv">
+                        <label for="file-hanro-o-aa" class="file-label">ファイルを選択</label>
+                        <div class="file-name" id="name-hanro-o-aa"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="button-section">
+                <button class="btn btn-validate" onclick="validateFiles()">🔍 ファイル検証</button>
+                <button class="btn btn-calculate" onclick="calculateProfit()">🚀 利益計算を実行</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>処理中です。しばらくお待ちください...</p>
+            </div>
+            
+            <div id="message-area"></div>
+            
+            <div class="results-section" id="results">
+                <h2 style="margin-bottom: 30px; color: #333;">📊 計算結果</h2>
+                
+                <div class="summary-cards" id="summary-cards">
+                    <!-- サマリー情報がここに表示されます -->
+                </div>
+                
+                <div class="monthly-results">
+                    <h3>月別詳細結果</h3>
+                    <div id="monthly-data">
+                        <!-- 月別データがここに表示されます -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ファイル選択処理
+        document.querySelectorAll('.file-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const uploadItem = this.closest('.upload-item');
+                const fileName = uploadItem.querySelector('.file-name');
+                
+                if (this.files.length > 0) {
+                    fileName.textContent = this.files[0].name;
+                    uploadItem.classList.add('has-file');
+                } else {
+                    fileName.textContent = '';
+                    uploadItem.classList.remove('has-file');
+                }
+            });
+        });
+
+        // メッセージ表示
+        function showMessage(message, type = 'info') {
+            const messageArea = document.getElementById('message-area');
+            const className = type === 'error' ? 'error' : 'success';
+            messageArea.innerHTML = `<div class="${className}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        // ローディング表示
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // ファイル検証
+        async function validateFiles() {
+            const formData = new FormData();
+            let hasFiles = false;
+
+            // ファイルを FormData に追加
+            const fileInputs = [
+                'file-makad-a-m', 'file-mercari-a-m', 'file-hanro-a-m',
+                'file-makad-o-aa', 'file-mercari-o-aa', 'file-hanro-o-aa'
+            ];
+
+            fileInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input.files.length > 0) {
+                    const key = inputId.replace('file-', '').replace('-', '_');
+                    formData.append(key, input.files[0]);
+                    hasFiles = true;
+                }
+            });
+
+            if (!hasFiles) {
+                showMessage('ファイルを選択してください。', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/api/profit/validate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    let message = 'ファイル検証が完了しました。\\n\\n';
+                    Object.entries(result.validation_results).forEach(([key, validation]) => {
+                        message += `${key}: ${validation.valid ? '✅ 正常' : '❌ エラー'}\\n`;
+                        if (!validation.valid) {
+                            message += `エラー内容: ${validation.error}\\n`;
+                        }
+                    });
+                    showMessage(message, 'success');
+                } else {
+                    showMessage(`検証エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`通信エラー: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 利益計算実行
+        async function calculateProfit() {
+            const formData = new FormData();
+            let hasFiles = false;
+
+            // ファイルを FormData に追加
+            const fileInputs = [
+                'file-makad-a-m', 'file-mercari-a-m', 'file-hanro-a-m',
+                'file-makad-o-aa', 'file-mercari-o-aa', 'file-hanro-o-aa'
+            ];
+
+            fileInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input.files.length > 0) {
+                    const key = inputId.replace('file-', '').replace('-', '_');
+                    formData.append(key, input.files[0]);
+                    hasFiles = true;
+                }
+            });
+
+            if (!hasFiles) {
+                showMessage('ファイルを選択してください。', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/api/profit/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    displayResults(result);
+                } else {
+                    showMessage(`計算エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`通信エラー: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 結果表示
+        function displayResults(result) {
+            // サマリー表示
+            const summaryCards = document.getElementById('summary-cards');
+            summaryCards.innerHTML = `
+                <div class="summary-card">
+                    <h3>処理月数</h3>
+                    <div class="value">${result.summary.total_months}ヶ月</div>
+                </div>
+                <div class="summary-card">
+                    <h3>総売上</h3>
+                    <div class="value">¥${result.summary.total_sales.toLocaleString()}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>総利益</h3>
+                    <div class="value">¥${result.summary.total_profit.toLocaleString()}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>平均利益率</h3>
+                    <div class="value">${result.summary.average_profit_rate.toFixed(1)}%</div>
+                </div>
+            `;
+
+            // 月別データ表示
+            const monthlyData = document.getElementById('monthly-data');
+            monthlyData.innerHTML = '';
+
+            Object.entries(result.results).forEach(([month, data]) => {
+                const monthItem = document.createElement('div');
+                monthItem.className = 'month-item';
+                
+                let dataItems = '';
+                Object.entries(data).forEach(([key, value]) => {
+                    if (value > 0) {
+                        dataItems += `
+                            <div class="data-item">
+                                <span class="data-label">${key}</span>
+                                <span class="data-value">¥${value.toLocaleString()}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                monthItem.innerHTML = `
+                    <div class="month-header">${month}</div>
+                    <div class="month-data">${dataItems}</div>
+                `;
+                
+                monthlyData.appendChild(monthItem);
+            });
+
+            // 結果セクションを表示
+            document.getElementById('results').style.display = 'block';
+        }
+
+        // 数値フォーマット関数
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ja-JP').format(num);
+        }
+    </script>
+</body>
+</html>

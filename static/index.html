@@ -303,30 +303,143 @@
         
         .summary-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
         
         .summary-card {
             background: white;
-            padding: 20px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 25px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-left: 4px solid #3498db;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         }
         
         .summary-card h3 {
-            color: #2c3e50;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
         }
         
         .summary-card .value {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            color: #333;
+            color: #2c3e50;
+            margin-bottom: 5px;
         }
+        
+        .summary-card.sales {
+            border-left-color: #3498db;
+        }
+        
+        .summary-card.profit {
+            border-left-color: #27ae60;
+        }
+        
+        .summary-card.rate {
+            border-left-color: #f39c12;
+        }
+        
+        .summary-card.months {
+            border-left-color: #9b59b6;
+        }
+        
+        .change-indicator {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        .change-positive {
+            color: #27ae60;
+        }
+        
+        .change-negative {
+            color: #e74c3c;
+        }
+        
+        .change-neutral {
+            color: #7f8c8d;
+        }
+        
+        .trend-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .trend-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .trend-chart {
+            display: flex;
+            align-items: end;
+            height: 150px;
+            gap: 8px;
+            padding: 10px 0;
+            border-bottom: 2px solid #ecf0f1;
+            position: relative;
+        }
+        
+        .trend-bar {
+            flex: 1;
+            background: linear-gradient(to top, #3498db, #5dade2);
+            border-radius: 4px 4px 0 0;
+            min-height: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .trend-bar:hover {
+            background: linear-gradient(to top, #2980b9, #3498db);
+            transform: scaleY(1.05);
+        }
+        
+        .trend-bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            white-space: nowrap;
+        }
+        
+        .trend-bar-value {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: #2c3e50;
+            background: rgba(255,255,255,0.9);
+            padding: 2px 6px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .trend-bar:hover .trend-bar-value {
+            opacity: 1;
+        }
+        
         
         .monthly-results {
             background: white;
@@ -548,6 +661,13 @@
                 
                 <div class="summary-cards" id="summary-cards">
                     <!-- サマリー情報がここに表示されます -->
+                </div>
+                
+                <div class="trend-section" id="trend-section" style="display: none;">
+                    <h3>売上トレンド</h3>
+                    <div class="trend-chart" id="trend-chart">
+                        <!-- トレンドグラフがここに表示されます -->
+                    </div>
                 </div>
                 
                 <div class="monthly-results">
@@ -882,24 +1002,30 @@
 
         // 結果表示
         function displayResults(result) {
-            // サマリー表示
+            // 改善されたサマリー表示
             const summaryCards = document.getElementById('summary-cards');
             summaryCards.innerHTML = `
-                <div class="summary-card">
+                <div class="summary-card months">
                     <h3>処理月数</h3>
-                    <div class="value">${result.summary.total_months}ヶ月</div>
+                    <div class="value">${result.summary.total_months}</div>
+                    <div class="change-indicator change-neutral">ヶ月のデータ</div>
                 </div>
-                <div class="summary-card">
+                <div class="summary-card sales">
                     <h3>総売上</h3>
-                    <div class="value">¥${result.summary.total_sales.toLocaleString()}</div>
+                    <div class="value">¥${formatLargeNumber(result.summary.total_sales)}</div>
+                    <div class="change-indicator change-neutral">全販路合計</div>
                 </div>
-                <div class="summary-card">
+                <div class="summary-card profit">
                     <h3>総利益</h3>
-                    <div class="value">¥${result.summary.total_profit.toLocaleString()}</div>
+                    <div class="value">¥${formatLargeNumber(result.summary.total_profit)}</div>
+                    <div class="change-indicator change-positive">利益合計</div>
                 </div>
-                <div class="summary-card">
+                <div class="summary-card rate">
                     <h3>平均利益率</h3>
                     <div class="value">${result.summary.average_profit_rate.toFixed(1)}%</div>
+                    <div class="change-indicator ${result.summary.average_profit_rate >= 20 ? 'change-positive' : result.summary.average_profit_rate >= 10 ? 'change-neutral' : 'change-negative'}">
+                        ${result.summary.average_profit_rate >= 20 ? '優秀' : result.summary.average_profit_rate >= 10 ? '良好' : '改善余地あり'}
+                    </div>
                 </div>
             `;
 
@@ -998,13 +1124,75 @@
                 });
             }
 
+            // トレンドグラフを表示
+            displayTrendChart(result);
+            
             // 結果セクションを表示
             document.getElementById('results').style.display = 'block';
+        }
+        
+        // トレンドグラフ表示
+        function displayTrendChart(result) {
+            try {
+                const trendSection = document.getElementById('trend-section');
+                const trendChart = document.getElementById('trend-chart');
+                
+                if (result.spreadsheet_data && result.spreadsheet_data.length > 1) {
+                    trendSection.style.display = 'block';
+                    
+                    // 最大値を取得して正規化
+                    const salesValues = result.spreadsheet_data.map(row => row['売上高合計'] || 0);
+                    const maxSales = Math.max(...salesValues);
+                    
+                    trendChart.innerHTML = '';
+                    
+                    result.spreadsheet_data.forEach(rowData => {
+                        const sales = rowData['売上高合計'] || 0;
+                        const height = maxSales > 0 ? Math.max((sales / maxSales * 100), 5) : 10;
+                        
+                        const bar = document.createElement('div');
+                        bar.className = 'trend-bar';
+                        bar.style.height = height + '%';
+                        
+                        const monthDisplay = (rowData['年月'] || '未設定').replace('年', '/').replace('月', '');
+                        
+                        bar.innerHTML = `
+                            <div class="trend-bar-label">${monthDisplay}</div>
+                            <div class="trend-bar-value">¥${formatLargeNumber(sales)}</div>
+                        `;
+                        
+                        trendChart.appendChild(bar);
+                    });
+                } else {
+                    trendSection.style.display = 'none';
+                }
+            } catch (error) {
+                console.warn('トレンドグラフ表示エラー:', error);
+                document.getElementById('trend-section').style.display = 'none';
+            }
         }
 
         // 数値フォーマット関数
         function formatNumber(num) {
             return new Intl.NumberFormat('ja-JP').format(num);
+        }
+        
+        // 大きな数値を簡潔に表示
+        function formatLargeNumber(num) {
+            if (num >= 10000000) {
+                return (num / 10000000).toFixed(1) + '千万';
+            } else if (num >= 10000) {
+                return (num / 10000).toFixed(1) + '万';
+            } else {
+                return num.toLocaleString();
+            }
+        }
+        
+        // パーセンテージのカラークラスを取得
+        function getPercentageClass(percentage) {
+            if (percentage > 0) return 'change-positive';
+            if (percentage < 0) return 'change-negative';
+            return 'change-neutral';
         }
     </script>
 </body>

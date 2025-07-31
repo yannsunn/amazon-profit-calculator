@@ -461,8 +461,9 @@ def merge_monthly_data(all_results):
     return merged
 
 def convert_to_spreadsheet_format(merged_results):
-    """マージされたデータをスプレッドシート形式に変換"""
+    """マージされたデータをスプレッドシート形式に変換（前月比付き）"""
     spreadsheet_data = []
+    previous_row = None
     
     for month_key, data in sorted(merged_results.items()):
         # 年月を日本語形式に変換
@@ -496,9 +497,32 @@ def convert_to_spreadsheet_format(merged_results):
             '売上高合計': data.get('売上高合計', 0)
         }
         
+        # 前月比を計算
+        if previous_row:
+            sales_change = calculate_change_percentage(
+                previous_row['売上高合計'], 
+                row_data['売上高合計']
+            )
+            profit_change = calculate_change_percentage(
+                previous_row['売上総利益'], 
+                row_data['売上総利益']
+            )
+            row_data['売上前月比'] = sales_change
+            row_data['利益前月比'] = profit_change
+        else:
+            row_data['売上前月比'] = 0
+            row_data['利益前月比'] = 0
+        
         spreadsheet_data.append(row_data)
+        previous_row = row_data
     
     return spreadsheet_data
+
+def calculate_change_percentage(previous_value, current_value):
+    """前月比をパーセンテージで計算"""
+    if previous_value == 0:
+        return float('inf') if current_value > 0 else 0
+    return ((current_value - previous_value) / previous_value) * 100
 
 @app.route('/')
 def index():

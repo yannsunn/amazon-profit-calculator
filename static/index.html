@@ -2,7 +2,13 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="複数のAmazonアカウントと販路のCSVデータを統合し、月次利益を自動計算するWebアプリケーション">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Amazon利益計算">
+    <meta name="format-detection" content="telephone=no">
     <title>Amazon売上利益計算システム（完全版）</title>
     <style>
         * {
@@ -836,27 +842,442 @@
             border: 1px solid #c3e6cb;
         }
 
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
+        /* タブレット対応 (769px - 1024px) */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .container {
+                padding: 20px;
             }
             
             .upload-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .summary-cards {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .analytics-controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .filter-group {
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .channel-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* モバイル対応 (768px以下) */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                max-width: 100%;
+            }
+            
+            .header {
+                text-align: center;
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+                margin-bottom: 10px;
+            }
+            
+            .header p {
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+            
+            /* アップロードセクション */
+            .upload-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .upload-group {
+                padding: 15px;
+            }
+            
+            .upload-group h3 {
+                font-size: 1rem;
+                margin-bottom: 12px;
+            }
+            
+            .file-upload {
+                padding: 15px;
+                font-size: 0.9rem;
+            }
+            
+            /* ボタンセクション */
+            .button-section {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+            
+            .btn-primary, .btn-secondary {
+                padding: 12px 20px;
+                font-size: 0.95rem;
+                width: 100%;
+            }
+            
+            /* 月選択セクション */
+            .month-selector {
+                width: 100%;
+            }
+            
+            .month-select {
+                width: 100%;
+                padding: 12px;
+                font-size: 1rem;
+            }
+            
+            /* サマリーカード */
+            .summary-cards {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .summary-card {
+                padding: 20px 15px;
+            }
+            
+            .summary-card h3 {
+                font-size: 0.9rem;
+                margin-bottom: 8px;
+            }
+            
+            .summary-card .value {
+                font-size: 1.5rem;
+            }
+            
+            .summary-card .change-indicator {
+                font-size: 0.8rem;
+            }
+            
+            /* トレンドグラフ */
+            .trend-chart {
+                height: 150px;
+                gap: 6px;
+                padding: 15px 0;
+            }
+            
+            .trend-bar-label {
+                font-size: 10px;
+                bottom: -20px;
+            }
+            
+            .trend-bar-value {
+                font-size: 9px;
+                top: -25px;
+            }
+            
+            /* 月別データ */
+            .month-data {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .data-item {
+                padding: 12px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .data-label {
+                font-size: 0.85rem;
+            }
+            
+            .data-value {
+                font-size: 0.95rem;
+                align-self: flex-end;
+            }
+            
+            /* 保存済みデータ管理 */
+            .saved-data-controls {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .saved-data-list {
                 grid-template-columns: 1fr;
             }
             
-            .button-section {
-                flex-direction: column;
-                align-items: center;
+            .saved-data-item {
+                padding: 15px;
             }
             
+            .saved-data-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .btn-small {
+                width: 100%;
+                text-align: center;
+                padding: 10px;
+            }
+            
+            /* 高度な分析セクション */
+            .analytics-controls {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .filter-group select {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .analytics-summary {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .analytics-card {
+                padding: 15px;
+            }
+            
+            .analytics-card .metric-value {
+                font-size: 1.4rem;
+            }
+            
+            .channel-breakdown {
+                grid-template-columns: 1fr;
+            }
+            
+            .channel-item {
+                padding: 12px;
+            }
+            
+            .channel-metrics {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                text-align: left;
+            }
+            
+            .insight-item {
+                padding: 10px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .insight-icon {
+                align-self: flex-start;
+            }
+            
+            .insight-text {
+                font-size: 0.85rem;
+                line-height: 1.4;
+            }
+        }
+
+        /* 小型モバイル対応 (480px以下) */
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 15px 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header p {
+                font-size: 0.8rem;
+            }
+            
+            .upload-group, .saved-data-item, .analytics-card {
+                padding: 12px;
+            }
+            
+            .summary-card {
+                padding: 15px 12px;
+            }
+            
+            .summary-card .value {
+                font-size: 1.3rem;
+            }
+            
+            .trend-chart {
+                height: 120px;
+                gap: 4px;
+            }
+            
+            .analytics-chart-container, .trend-analysis {
+                padding: 15px;
+            }
+            
+            .analytics-chart-title {
+                font-size: 1rem;
+            }
+            
+            .channel-name {
+                font-size: 0.9rem;
+            }
+            
+            .channel-metric-value {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* 横向きモバイル対応 */
+        @media (max-width: 768px) and (orientation: landscape) {
             .summary-cards {
                 grid-template-columns: repeat(2, 1fr);
             }
             
-            .month-data {
-                grid-template-columns: 1fr;
+            .analytics-summary {
+                grid-template-columns: repeat(2, 1fr);
             }
+            
+            .channel-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .trend-chart {
+                height: 120px;
+            }
+        }
+
+        /* タッチデバイス最適化 */
+        @media (pointer: coarse) {
+            .btn-primary, .btn-secondary, .btn-small {
+                min-height: 44px;
+                padding: 12px 16px;
+            }
+            
+            .file-upload {
+                min-height: 80px;
+                touch-action: manipulation;
+            }
+            
+            .month-select {
+                min-height: 44px;
+                padding: 12px;
+            }
+            
+            .summary-card, .analytics-card, .saved-data-item {
+                touch-action: manipulation;
+            }
+            
+            .trend-bar {
+                min-width: 20px;
+            }
+        }
+
+        /* 高解像度ディスプレイ対応 */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .spinner {
+                border-width: 2px;
+            }
+            
+            .trend-bar, .analytics-card, .summary-card {
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+        }
+
+        /* アクセシビリティ: 大きなフォント設定への対応 */
+        @media (prefers-reduced-motion: reduce) {
+            .summary-card, .analytics-card, .saved-data-item, .trend-bar {
+                transition: none;
+            }
+            
+            .spinner {
+                animation: none;
+            }
+        }
+
+        /* ダークモード対応の準備 */
+        @media (prefers-color-scheme: dark) {
+            /* 将来のダークモード実装時に使用 */
+        }
+
+        /* タッチフィードバック */
+        .touch-active {
+            background-color: #e3f2fd !important;
+            transform: scale(0.98);
+            transition: all 0.1s ease;
+        }
+
+        /* ローディング状態の改善 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* オフライン状態の表示 */
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #f44336;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.9rem;
+            z-index: 10000;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .offline-indicator.show {
+            transform: translateY(0);
+        }
+
+        /* フォーカス状態の改善 */
+        .btn-primary:focus, .btn-secondary:focus, .btn-small:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 2px;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 1px;
+        }
+
+        /* 選択可能テキストの改善 */
+        .data-value, .metric-value, .channel-metric-value {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
         }
     </style>
 </head>
@@ -1044,6 +1465,161 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadMonthsList();
             loadSavedDataList();
+            initializeMobileOptimizations();
+        });
+
+        // モバイル最適化の初期化
+        function initializeMobileOptimizations() {
+            // PWA対応
+            addInstallPrompt();
+            
+            // タッチイベントの最適化
+            optimizeTouchEvents();
+            
+            // 画面回転対応
+            handleOrientationChange();
+            
+            // モバイルキーボード対応
+            handleMobileKeyboard();
+        }
+
+        // PWAインストールプロンプト
+        let deferredPrompt;
+        function addInstallPrompt() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // インストールボタンを表示（将来の機能）
+                console.log('PWA インストール可能');
+            });
+        }
+
+        // タッチイベントの最適化
+        function optimizeTouchEvents() {
+            // ドラッグ&ドロップエリアのタッチ対応強化
+            const dropAreas = document.querySelectorAll('.file-upload');
+            
+            dropAreas.forEach(area => {
+                area.addEventListener('touchstart', function(e) {
+                    this.classList.add('touch-active');
+                }, { passive: true });
+                
+                area.addEventListener('touchend', function(e) {
+                    this.classList.remove('touch-active');
+                    
+                    // タッチ後にファイル選択ダイアログを開く
+                    if (e.changedTouches.length === 1) {
+                        const input = this.querySelector('input[type="file"]');
+                        if (input) {
+                            input.click();
+                        }
+                    }
+                }, { passive: true });
+            });
+            
+            // カードのタッチフィードバック
+            const cards = document.querySelectorAll('.summary-card, .analytics-card, .saved-data-item');
+            cards.forEach(card => {
+                card.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.98)';
+                }, { passive: true });
+                
+                card.addEventListener('touchend', function() {
+                    this.style.transform = '';
+                }, { passive: true });
+            });
+        }
+
+        // 画面回転対応
+        function handleOrientationChange() {
+            window.addEventListener('orientationchange', function() {
+                setTimeout(() => {
+                    // トレンドグラフの再描画
+                    const trendSection = document.getElementById('trend-section');
+                    if (trendSection && trendSection.style.display !== 'none') {
+                        // 現在表示されている結果データで再描画
+                        const resultsSection = document.getElementById('results');
+                        if (resultsSection && resultsSection.style.display !== 'none') {
+                            // 簡単な再描画トリガー
+                            window.dispatchEvent(new Event('resize'));
+                        }
+                    }
+                }, 500);
+            });
+        }
+
+        // モバイルキーボード対応
+        function handleMobileKeyboard() {
+            const viewport = document.querySelector('meta[name=viewport]');
+            const originalContent = viewport.content;
+            
+            // フォーカス時にズームを防ぐ
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', () => {
+                    viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+                });
+                
+                input.addEventListener('blur', () => {
+                    viewport.content = originalContent;
+                });
+            });
+        }
+
+        // バーチャルキーボード対応
+        if ('visualViewport' in window) {
+            window.visualViewport.addEventListener('resize', () => {
+                const keyboardHeight = window.innerHeight - window.visualViewport.height;
+                if (keyboardHeight > 150) {
+                    // キーボードが表示されている
+                    document.body.style.paddingBottom = keyboardHeight + 'px';
+                } else {
+                    document.body.style.paddingBottom = '';
+                }
+            });
+        }
+
+        // 接続状態の監視
+        function monitorConnection() {
+            function updateConnectionStatus() {
+                const status = navigator.onLine ? 'オンライン' : 'オフライン';
+                if (!navigator.onLine) {
+                    showMessage('インターネット接続が切断されました。一部の機能が利用できません。', 'error');
+                }
+            }
+            
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+        }
+
+        // パフォーマンス監視
+        function monitorPerformance() {
+            if ('performance' in window) {
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                        if (loadTime > 5000) {
+                            console.warn('ページの読み込みが遅い可能性があります:', loadTime + 'ms');
+                        }
+                    }, 0);
+                });
+            }
+        }
+
+        // エラー処理の改善
+        window.addEventListener('error', function(e) {
+            console.error('JavaScriptエラー:', e.error);
+            // ユーザーフレンドリーなエラーメッセージ
+            if (e.error && e.error.message) {
+                showMessage('予期しないエラーが発生しました。ページを再読み込みしてください。', 'error');
+            }
+        });
+
+        // 初期化実行
+        document.addEventListener('DOMContentLoaded', function() {
+            monitorConnection();
+            monitorPerformance();
         });
         
         // 月リストを読み込み

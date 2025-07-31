@@ -60,6 +60,29 @@
             margin-bottom: 30px;
         }
         
+        .account-section {
+            margin-bottom: 40px;
+        }
+        
+        .account-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .mercari-section {
+            margin: 40px 0;
+            text-align: center;
+        }
+        
+        .mercari-section .upload-item {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
         .upload-item {
             border: 2px dashed #e0e0e0;
             border-radius: 8px;
@@ -316,42 +339,56 @@
         
         <div class="main-content">
             <div class="upload-section">
-                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">CSVファイルをアップロード</h2>
+                <h2 style="text-align: center; margin-bottom: 40px; color: #333;">CSVファイルをアップロード</h2>
                 
-                <div class="upload-grid">
-                    <div class="upload-item" id="upload-makad-a-m">
-                        <h3>マカド売上データ (A-M)</h3>
-                        <input type="file" class="file-input" id="file-makad-a-m" accept=".csv">
-                        <label for="file-makad-a-m" class="file-label">ファイルを選択</label>
-                        <div class="file-name" id="name-makad-a-m"></div>
+                <!-- A-Mアカウント -->
+                <div class="account-section">
+                    <div class="account-title">A-M アカウント</div>
+                    <div class="upload-grid">
+                        <div class="upload-item" id="upload-makad-a-m">
+                            <h3>マカド売上データ</h3>
+                            <input type="file" class="file-input" id="file-makad-a-m" accept=".csv">
+                            <label for="file-makad-a-m" class="file-label">ファイルを選択</label>
+                            <div class="file-name" id="name-makad-a-m"></div>
+                        </div>
+                        
+                        <div class="upload-item" id="upload-hanro-a-m">
+                            <h3>販路プラス売上データ</h3>
+                            <input type="file" class="file-input" id="file-hanro-a-m" accept=".csv">
+                            <label for="file-hanro-a-m" class="file-label">ファイルを選択</label>
+                            <div class="file-name" id="name-hanro-a-m"></div>
+                        </div>
                     </div>
-                    
+                </div>
+                
+                <!-- メルカリショップ -->
+                <div class="mercari-section">
+                    <div class="account-title">メルカリショップ</div>
                     <div class="upload-item" id="upload-mercari">
                         <h3>メルカリショップ売上データ</h3>
                         <input type="file" class="file-input" id="file-mercari" accept=".csv">
                         <label for="file-mercari" class="file-label">ファイルを選択</label>
                         <div class="file-name" id="name-mercari"></div>
                     </div>
-                    
-                    <div class="upload-item" id="upload-hanro-a-m">
-                        <h3>販路プラス売上データ (A-M)</h3>
-                        <input type="file" class="file-input" id="file-hanro-a-m" accept=".csv">
-                        <label for="file-hanro-a-m" class="file-label">ファイルを選択</label>
-                        <div class="file-name" id="name-hanro-a-m"></div>
-                    </div>
-                    
-                    <div class="upload-item" id="upload-makad-o-aa">
-                        <h3>マカド売上データ (O-AA)</h3>
-                        <input type="file" class="file-input" id="file-makad-o-aa" accept=".csv">
-                        <label for="file-makad-o-aa" class="file-label">ファイルを選択</label>
-                        <div class="file-name" id="name-makad-o-aa"></div>
-                    </div>
-                    
-                    <div class="upload-item" id="upload-hanro-o-aa">
-                        <h3>販路プラス売上データ (O-AA)</h3>
-                        <input type="file" class="file-input" id="file-hanro-o-aa" accept=".csv">
-                        <label for="file-hanro-o-aa" class="file-label">ファイルを選択</label>
-                        <div class="file-name" id="name-hanro-o-aa"></div>
+                </div>
+                
+                <!-- O-AAアカウント -->
+                <div class="account-section">
+                    <div class="account-title">O-AA アカウント</div>
+                    <div class="upload-grid">
+                        <div class="upload-item" id="upload-makad-o-aa">
+                            <h3>マカド売上データ</h3>
+                            <input type="file" class="file-input" id="file-makad-o-aa" accept=".csv">
+                            <label for="file-makad-o-aa" class="file-label">ファイルを選択</label>
+                            <div class="file-name" id="name-makad-o-aa"></div>
+                        </div>
+                        
+                        <div class="upload-item" id="upload-hanro-o-aa">
+                            <h3>販路プラス売上データ</h3>
+                            <input type="file" class="file-input" id="file-hanro-o-aa" accept=".csv">
+                            <label for="file-hanro-o-aa" class="file-label">ファイルを選択</label>
+                            <div class="file-name" id="name-hanro-o-aa"></div>
+                        </div>
                     </div>
                 </div>
             </div>

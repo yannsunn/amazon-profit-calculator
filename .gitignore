@@ -56,3 +56,6 @@ htmlcov/
 # Temporary files
 *.tmp
 *.temp
+
+# Monthly data storage
+monthly_data/

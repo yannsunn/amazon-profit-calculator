@@ -92,6 +92,85 @@
             font-size: 0.9rem;
         }
         
+        .month-selection {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .month-selector {
+            margin: 20px 0;
+        }
+        
+        .month-select {
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            color: #333;
+            min-width: 250px;
+            cursor: pointer;
+        }
+        
+        .month-select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .saved-months {
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .saved-months h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .month-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .month-card:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .month-card.has-data {
+            border-color: #27ae60;
+            background: #f0f8f3;
+        }
+        
+        .month-card-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .month-card-status {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .month-card.has-data .month-card-status {
+            color: #27ae60;
+        }
+        
         .upload-item {
             border: 2px dashed #e0e0e0;
             border-radius: 8px;
@@ -376,6 +455,15 @@
         </div>
         
         <div class="main-content">
+            <div class="month-selection">
+                <h2 style="text-align: center; margin-bottom: 20px; color: #333;">対象月選択</h2>
+                <div class="month-selector">
+                    <select id="target-month" class="month-select">
+                        <option value="">月を選択してください</option>
+                    </select>
+                </div>
+            </div>
+            
             <div class="upload-section">
                 <h2 style="text-align: center; margin-bottom: 40px; color: #333;">CSVファイルをアップロード</h2>
                 
@@ -441,6 +529,13 @@
                 <button class="btn btn-calculate" onclick="calculateProfit()">利益計算を実行</button>
             </div>
             
+            <div class="saved-months" id="saved-months" style="display: none;">
+                <h3>保存済み月データ</h3>
+                <div class="month-grid" id="month-grid">
+                    <!-- 月カードがここに表示されます -->
+                </div>
+            </div>
+            
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>処理中です。しばらくお待ちください...</p>
@@ -466,6 +561,109 @@
     </div>
 
     <script>
+        let monthsData = [];
+        
+        // ページ読み込み時に月リストを取得
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMonthsList();
+            loadSavedMonths();
+        });
+        
+        // 月リストを読み込み
+        async function loadMonthsList() {
+            try {
+                const response = await fetch('/api/months');
+                const result = await response.json();
+                
+                if (result.success) {
+                    monthsData = result.months;
+                    populateMonthSelect();
+                    displaySavedMonths();
+                } else {
+                    showMessage('月リストの読み込みに失敗しました', 'error');
+                }
+            } catch (error) {
+                showMessage(`月リスト読み込みエラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // 月選択セレクトボックスを設定
+        function populateMonthSelect() {
+            const select = document.getElementById('target-month');
+            select.innerHTML = '<option value="">月を選択してください</option>';
+            
+            monthsData.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month.key;
+                option.textContent = month.display + (month.has_data ? ' (保存済み)' : '');
+                select.appendChild(option);
+            });
+        }
+        
+        // 保存済み月データを表示
+        function displaySavedMonths() {
+            const savedMonths = monthsData.filter(month => month.has_data);
+            const savedMonthsSection = document.getElementById('saved-months');
+            const monthGrid = document.getElementById('month-grid');
+            
+            if (savedMonths.length > 0) {
+                savedMonthsSection.style.display = 'block';
+                monthGrid.innerHTML = '';
+                
+                savedMonths.forEach(month => {
+                    const card = document.createElement('div');
+                    card.className = 'month-card has-data';
+                    card.onclick = () => viewMonthData(month.key);
+                    
+                    card.innerHTML = `
+                        <div class="month-card-title">${month.display}</div>
+                        <div class="month-card-status">データあり</div>
+                    `;
+                    
+                    monthGrid.appendChild(card);
+                });
+            } else {
+                savedMonthsSection.style.display = 'none';
+            }
+        }
+        
+        // 月データを表示
+        async function viewMonthData(monthKey) {
+            try {
+                const response = await fetch(`/api/months/${monthKey}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // スプレッドシートデータを表示
+                    const mockResult = {
+                        spreadsheet_data: result.data.spreadsheet_data,
+                        summary: {
+                            total_months: 1,
+                            total_sales: result.data.spreadsheet_data.reduce((sum, row) => sum + row['売上高合計'], 0),
+                            total_profit: result.data.spreadsheet_data.reduce((sum, row) => sum + row['売上総利益'], 0),
+                            average_profit_rate: 0
+                        }
+                    };
+                    
+                    mockResult.summary.average_profit_rate = mockResult.summary.total_sales > 0 
+                        ? (mockResult.summary.total_profit / mockResult.summary.total_sales * 100) 
+                        : 0;
+                    
+                    displayResults(mockResult);
+                    showMessage(`${result.display_name}のデータを表示しました`, 'success');
+                } else {
+                    showMessage(result.error, 'error');
+                }
+            } catch (error) {
+                showMessage(`データ読み込みエラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // 保存済み月データを再読み込み
+        function loadSavedMonths() {
+            // この関数はloadMonthsList()で一緒に処理されるため、空のままにしておく
+        }
+        
         // ファイル選択処理
         function handleFileSelect(file, uploadItem) {
             const fileInput = uploadItem.querySelector('.file-input');
@@ -625,8 +823,17 @@
 
         // 利益計算実行
         async function calculateProfit() {
+            const targetMonth = document.getElementById('target-month').value;
+            if (!targetMonth) {
+                showMessage('対象月を選択してください。', 'error');
+                return;
+            }
+            
             const formData = new FormData();
             let hasFiles = false;
+
+            // 対象月を追加
+            formData.append('target_month', targetMonth);
 
             // ファイルを FormData に追加
             const fileInputs = [
@@ -661,6 +868,8 @@
                 if (result.success) {
                     showMessage(result.message, 'success');
                     displayResults(result);
+                    // 月リストを再読み込みしてステータスを更新
+                    await loadMonthsList();
                 } else {
                     showMessage(`計算エラー: ${result.error}`, 'error');
                 }

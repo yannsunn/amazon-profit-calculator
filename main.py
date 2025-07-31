@@ -9,6 +9,9 @@ import tempfile
 import logging
 import csv
 import io
+import json
+import shutil
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -27,9 +30,138 @@ CORS(app)
 # ファイルアップロード設定
 ALLOWED_EXTENSIONS = {'csv'}
 
+# データ保存ディレクトリ
+DATA_DIR = 'monthly_data'
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
+# 対象期間の月リストを生成（2025年7月〜2026年7月）
+def generate_month_list():
+    months = []
+    start_date = datetime(2025, 7, 1)
+    end_date = datetime(2026, 7, 1)
+    
+    current = start_date
+    while current <= end_date:
+        months.append({
+            'key': current.strftime('%Y-%m'),
+            'display': f"{current.year}年{current.month}月",
+            'year': current.year,
+            'month': current.month
+        })
+        # 次の月へ
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
+    
+    return months
+
+MONTH_LIST = generate_month_list()
+
 def allowed_file(filename):
     """許可されたファイル形式かチェック"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_monthly_data(month_key, uploaded_files, results, spreadsheet_data):
+    """月別データを保存"""
+    try:
+        month_dir = os.path.join(DATA_DIR, month_key)
+        if not os.path.exists(month_dir):
+            os.makedirs(month_dir)
+        
+        # メタデータを保存
+        metadata = {
+            'timestamp': datetime.now().isoformat(),
+            'uploaded_files': uploaded_files,
+            'month': month_key
+        }
+        
+        with open(os.path.join(month_dir, 'metadata.json'), 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+        
+        # 計算結果を保存
+        with open(os.path.join(month_dir, 'results.json'), 'w', encoding='utf-8') as f:
+            json.dump(results, f, ensure_ascii=False, indent=2)
+        
+        # スプレッドシート形式データを保存
+        with open(os.path.join(month_dir, 'spreadsheet.json'), 'w', encoding='utf-8') as f:
+            json.dump(spreadsheet_data, f, ensure_ascii=False, indent=2)
+        
+        logger.info(f"月別データ保存完了: {month_key}")
+        return True
+    except Exception as e:
+        logger.error(f"月別データ保存エラー {month_key}: {e}")
+        return False
+
+def save_uploaded_files(month_key, file_paths):
+    """アップロードされたファイルを月別ディレクトリに保存"""
+    try:
+        month_dir = os.path.join(DATA_DIR, month_key, 'files')
+        if not os.path.exists(month_dir):
+            os.makedirs(month_dir)
+        
+        saved_files = {}
+        for key, temp_path in file_paths.items():
+            if os.path.exists(temp_path):
+                dest_path = os.path.join(month_dir, f"{key}.csv")
+                shutil.copy2(temp_path, dest_path)
+                saved_files[key] = dest_path
+        
+        return saved_files
+    except Exception as e:
+        logger.error(f"ファイル保存エラー {month_key}: {e}")
+        return {}
+
+def load_monthly_data(month_key):
+    """月別データを読み込み"""
+    try:
+        month_dir = os.path.join(DATA_DIR, month_key)
+        if not os.path.exists(month_dir):
+            return None
+        
+        # メタデータを読み込み
+        with open(os.path.join(month_dir, 'metadata.json'), 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+        
+        # 計算結果を読み込み
+        with open(os.path.join(month_dir, 'results.json'), 'r', encoding='utf-8') as f:
+            results = json.load(f)
+        
+        # スプレッドシート形式データを読み込み
+        with open(os.path.join(month_dir, 'spreadsheet.json'), 'r', encoding='utf-8') as f:
+            spreadsheet_data = json.load(f)
+        
+        return {
+            'metadata': metadata,
+            'results': results,
+            'spreadsheet_data': spreadsheet_data
+        }
+    except Exception as e:
+        logger.error(f"月別データ読み込みエラー {month_key}: {e}")
+        return None
+
+def get_saved_months():
+    """保存済み月データのリストを取得"""
+    try:
+        saved_months = []
+        if os.path.exists(DATA_DIR):
+            for month_key in os.listdir(DATA_DIR):
+                month_path = os.path.join(DATA_DIR, month_key)
+                if os.path.isdir(month_path) and os.path.exists(os.path.join(month_path, 'metadata.json')):
+                    # 月情報を検索
+                    month_info = next((m for m in MONTH_LIST if m['key'] == month_key), None)
+                    if month_info:
+                        saved_months.append({
+                            'key': month_key,
+                            'display': month_info['display'],
+                            'has_data': True
+                        })
+        
+        return sorted(saved_months, key=lambda x: x['key'])
+    except Exception as e:
+        logger.error(f"保存済み月データ取得エラー: {e}")
+        return []
 
 def detect_encoding(file_path):
     """エンコーディング検出（簡易版）"""
@@ -384,8 +516,13 @@ def health_check():
 
 @app.route('/api/profit/upload', methods=['POST'])
 def upload_and_calculate():
-    """ファイルアップロードと利益計算（スプレッドシート対応）"""
+    """ファイルアップロードと利益計算（月別保存対応）"""
     try:
+        # 対象月を取得
+        target_month = request.form.get('target_month')
+        if not target_month:
+            return jsonify({'error': '対象月が指定されていません'}), 400
+        
         # アップロードされたファイルを確認
         uploaded_files = {}
         file_paths = {}
@@ -451,6 +588,12 @@ def upload_and_calculate():
             'average_profit_rate': (total_profit / total_sales * 100) if total_sales > 0 else 0
         }
         
+        # ファイルを月別ディレクトリに保存
+        saved_files = save_uploaded_files(target_month, file_paths)
+        
+        # 月別データを保存
+        save_success = save_monthly_data(target_month, uploaded_files, merged_results, spreadsheet_data)
+        
         # 一時ファイルを削除
         for temp_path in file_paths.values():
             try:
@@ -460,11 +603,13 @@ def upload_and_calculate():
         
         return jsonify({
             'success': True,
-            'message': f'{len(uploaded_files)}個のファイルを処理しました',
+            'message': f'{target_month}のデータを処理し、{len(uploaded_files)}個のファイルを保存しました',
+            'target_month': target_month,
             'results': merged_results,
             'spreadsheet_data': spreadsheet_data,
             'summary': summary,
-            'uploaded_files': uploaded_files
+            'uploaded_files': uploaded_files,
+            'saved': save_success
         })
     
     except Exception as e:
@@ -530,6 +675,117 @@ def validate_files():
         return jsonify({
             'success': False,
             'error': f'検証中にエラーが発生しました: {str(e)}'
+        }), 500
+
+# 新しいAPIエンドポイントを追加
+@app.route('/api/months', methods=['GET'])
+def get_months():
+    """対象月リストと保存状態を取得"""
+    try:
+        saved_months = get_saved_months()
+        saved_keys = {month['key'] for month in saved_months}
+        
+        months_with_status = []
+        for month in MONTH_LIST:
+            months_with_status.append({
+                'key': month['key'],
+                'display': month['display'],
+                'year': month['year'],
+                'month': month['month'],
+                'has_data': month['key'] in saved_keys
+            })
+        
+        return jsonify({
+            'success': True,
+            'months': months_with_status,
+            'saved_count': len(saved_months)
+        })
+    except Exception as e:
+        logger.error(f"月リスト取得エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'月リスト取得エラー: {str(e)}'
+        }), 500
+
+@app.route('/api/months/<month_key>', methods=['GET'])
+def get_month_data(month_key):
+    """指定月のデータを取得"""
+    try:
+        data = load_monthly_data(month_key)
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': f'{month_key}のデータが見つかりません'
+            }), 404
+        
+        # 月情報を検索
+        month_info = next((m for m in MONTH_LIST if m['key'] == month_key), None)
+        display_name = month_info['display'] if month_info else month_key
+        
+        return jsonify({
+            'success': True,
+            'month_key': month_key,
+            'display_name': display_name,
+            'data': data
+        })
+    except Exception as e:
+        logger.error(f"月データ取得エラー {month_key}: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'月データ取得エラー: {str(e)}'
+        }), 500
+
+@app.route('/api/months/<month_key>/spreadsheet', methods=['GET'])
+def export_month_spreadsheet(month_key):
+    """指定月のスプレッドシートデータをエクスポート"""
+    try:
+        data = load_monthly_data(month_key)
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': f'{month_key}のデータが見つかりません'
+            }), 404
+        
+        # 月情報を検索
+        month_info = next((m for m in MONTH_LIST if m['key'] == month_key), None)
+        display_name = month_info['display'] if month_info else month_key
+        
+        return jsonify({
+            'success': True,
+            'month_key': month_key,
+            'display_name': display_name,
+            'spreadsheet_data': data['spreadsheet_data'],
+            'metadata': data['metadata']
+        })
+    except Exception as e:
+        logger.error(f"スプレッドシートエクスポートエラー {month_key}: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'スプレッドシートエクスポートエラー: {str(e)}'
+        }), 500
+
+@app.route('/api/months/<month_key>', methods=['DELETE'])
+def delete_month_data(month_key):
+    """指定月のデータを削除"""
+    try:
+        month_dir = os.path.join(DATA_DIR, month_key)
+        if os.path.exists(month_dir):
+            shutil.rmtree(month_dir)
+            logger.info(f"月データ削除完了: {month_key}")
+            return jsonify({
+                'success': True,
+                'message': f'{month_key}のデータを削除しました'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'{month_key}のデータが見つかりません'
+            }), 404
+    except Exception as e:
+        logger.error(f"月データ削除エラー {month_key}: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'月データ削除エラー: {str(e)}'
         }), 500
 
 if __name__ == '__main__':

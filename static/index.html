@@ -439,6 +439,103 @@
         .trend-bar:hover .trend-bar-value {
             opacity: 1;
         }
+
+        /* 保存済みデータ管理 */
+        .saved-data-section {
+            margin: 30px 0;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .saved-data-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .saved-data-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .saved-data-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .saved-data-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .saved-data-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .saved-data-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .saved-data-summary {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .saved-data-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-view {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #0056b3;
+        }
+
+        .btn-export {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #1e7e34;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
         
         
         .monthly-results {
@@ -656,6 +753,22 @@
             
             <div id="message-area"></div>
             
+            <!-- 保存済みデータ管理セクション -->
+            <div class="saved-data-section" id="saved-data-section" style="display: none;">
+                <h2>保存済みデータ管理</h2>
+                <div class="saved-data-controls">
+                    <button type="button" onclick="loadSavedDataList()" class="btn-secondary">
+                        リスト更新
+                    </button>
+                    <button type="button" onclick="exportAllData()" class="btn-secondary">
+                        全データエクスポート
+                    </button>
+                </div>
+                <div class="saved-data-list" id="saved-data-list">
+                    <!-- 保存済みデータのリストがここに表示されます -->
+                </div>
+            </div>
+
             <div class="results-section" id="results">
                 <h2 style="margin-bottom: 30px; color: #333;">計算結果</h2>
                 
@@ -686,7 +799,7 @@
         // ページ読み込み時に月リストを取得
         document.addEventListener('DOMContentLoaded', function() {
             loadMonthsList();
-            loadSavedMonths();
+            loadSavedDataList();
         });
         
         // 月リストを読み込み
@@ -1129,6 +1242,9 @@
             
             // 結果セクションを表示
             document.getElementById('results').style.display = 'block';
+            
+            // 保存済みデータリストを更新
+            loadSavedDataList();
         }
         
         // トレンドグラフ表示
@@ -1193,6 +1309,229 @@
             if (percentage > 0) return 'change-positive';
             if (percentage < 0) return 'change-negative';
             return 'change-neutral';
+        }
+
+        // 保存済みデータリストを読み込み
+        async function loadSavedDataList() {
+            try {
+                const response = await fetch('/api/months');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const savedMonths = result.months.filter(month => month.has_data);
+                    displaySavedDataList(savedMonths);
+                    
+                    // 保存済みデータがある場合はセクションを表示
+                    const section = document.getElementById('saved-data-section');
+                    if (savedMonths.length > 0) {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                } else {
+                    showMessage('保存済みデータの読み込みに失敗しました', 'error');
+                }
+            } catch (error) {
+                console.error('保存済みデータ読み込みエラー:', error);
+            }
+        }
+
+        // 保存済みデータリストを表示
+        function displaySavedDataList(savedMonths) {
+            const listContainer = document.getElementById('saved-data-list');
+            listContainer.innerHTML = '';
+            
+            if (savedMonths.length === 0) {
+                listContainer.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">保存済みデータはありません</p>';
+                return;
+            }
+            
+            savedMonths.forEach(month => {
+                const item = document.createElement('div');
+                item.className = 'saved-data-item';
+                
+                item.innerHTML = `
+                    <div class="saved-data-title">${month.display}</div>
+                    <div class="saved-data-summary">データ保存済み (${month.key})</div>
+                    <div class="saved-data-actions">
+                        <button class="btn-small btn-view" onclick="viewMonthData('${month.key}')">
+                            詳細表示
+                        </button>
+                        <button class="btn-small btn-export" onclick="exportMonthData('${month.key}')">
+                            エクスポート
+                        </button>
+                        <button class="btn-small btn-delete" onclick="deleteMonthData('${month.key}')">
+                            削除
+                        </button>
+                    </div>
+                `;
+                
+                listContainer.appendChild(item);
+            });
+        }
+
+        // 月別データを表示
+        async function viewMonthData(monthKey) {
+            try {
+                showLoading(true);
+                const response = await fetch(`/api/months/${monthKey}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 既存の結果表示関数を使用
+                    const mockResult = {
+                        success: true,
+                        message: `${result.display_name}のデータを表示しました`,
+                        target_month: monthKey,
+                        results: result.data.results,
+                        spreadsheet_data: result.data.spreadsheet_data,
+                        summary: {
+                            total_months: 1,
+                            total_sales: result.data.spreadsheet_data.reduce((sum, row) => sum + (row['売上高合計'] || 0), 0),
+                            total_profit: result.data.spreadsheet_data.reduce((sum, row) => sum + (row['売上総利益'] || 0), 0),
+                            average_profit_rate: 0
+                        }
+                    };
+                    
+                    // 利益率を計算
+                    if (mockResult.summary.total_sales > 0) {
+                        mockResult.summary.average_profit_rate = (mockResult.summary.total_profit / mockResult.summary.total_sales) * 100;
+                    }
+                    
+                    displayResults(mockResult);
+                    showMessage(`${result.display_name}のデータを表示しました`, 'success');
+                } else {
+                    showMessage(`データ表示エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`データ表示エラー: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 月別データをエクスポート
+        async function exportMonthData(monthKey) {
+            try {
+                const response = await fetch(`/api/months/${monthKey}/spreadsheet`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // CSVデータを生成
+                    const csvData = convertToCSV(result.spreadsheet_data);
+                    downloadCSV(csvData, `${monthKey}_データ.csv`);
+                    showMessage(`${result.display_name}のデータをエクスポートしました`, 'success');
+                } else {
+                    showMessage(`エクスポートエラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`エクスポートエラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 月別データを削除
+        async function deleteMonthData(monthKey) {
+            if (!confirm(`${monthKey}のデータを削除しますか？この操作は取り消せません。`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/months/${monthKey}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    // リストを再読み込み
+                    loadSavedDataList();
+                    loadMonthsList();
+                } else {
+                    showMessage(`削除エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`削除エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 全データをエクスポート
+        async function exportAllData() {
+            try {
+                showLoading(true);
+                const response = await fetch('/api/months');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const savedMonths = result.months.filter(month => month.has_data);
+                    
+                    if (savedMonths.length === 0) {
+                        showMessage('エクスポートするデータがありません', 'error');
+                        return;
+                    }
+                    
+                    let allData = [];
+                    
+                    for (const month of savedMonths) {
+                        const monthResponse = await fetch(`/api/months/${month.key}/spreadsheet`);
+                        const monthResult = await monthResponse.json();
+                        
+                        if (monthResult.success) {
+                            allData = allData.concat(monthResult.spreadsheet_data);
+                        }
+                    }
+                    
+                    if (allData.length > 0) {
+                        const csvData = convertToCSV(allData);
+                        downloadCSV(csvData, '全データ_一括エクスポート.csv');
+                        showMessage(`${savedMonths.length}ヶ月分のデータをエクスポートしました`, 'success');
+                    } else {
+                        showMessage('エクスポート可能なデータがありません', 'error');
+                    }
+                } else {
+                    showMessage(`エクスポートエラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`エクスポートエラー: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // CSVデータに変換
+        function convertToCSV(data) {
+            if (!data || data.length === 0) return '';
+            
+            const headers = Object.keys(data[0]);
+            const csvRows = [headers.join(',')];
+            
+            data.forEach(row => {
+                const values = headers.map(header => {
+                    const value = row[header];
+                    // 値に改行やカンマが含まれる場合はダブルクォートで囲む
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('\n') || value.includes('"'))) {
+                        return `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                });
+                csvRows.push(values.join(','));
+            });
+            
+            return csvRows.join('\n');
+        }
+
+        // CSVファイルをダウンロード
+        function downloadCSV(csvData, filename) {
+            const blob = new Blob(['\uFEFF' + csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>

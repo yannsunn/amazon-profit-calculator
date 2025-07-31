@@ -12,8 +12,8 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
             min-height: 100vh;
             padding: 20px;
         }
@@ -22,26 +22,26 @@
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden;
         }
         
         .header {
-            background: linear-gradient(135deg, #ff9a56 0%, #ffad46 100%);
+            background: #2c3e50;
             color: white;
-            padding: 40px;
+            padding: 30px;
             text-align: center;
         }
         
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             margin-bottom: 10px;
-            font-weight: 700;
+            font-weight: 600;
         }
         
         .header p {
-            font-size: 1.1rem;
+            font-size: 1rem;
             opacity: 0.9;
         }
         
@@ -61,22 +61,22 @@
         }
         
         .upload-item {
-            border: 2px dashed #ddd;
-            border-radius: 15px;
-            padding: 25px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             background: #fafafa;
         }
         
         .upload-item:hover {
-            border-color: #667eea;
-            background: #f0f7ff;
+            border-color: #2c3e50;
+            background: #f8f8f8;
         }
         
         .upload-item.has-file {
-            border-color: #28a745;
-            background: #f8fff9;
+            border-color: #27ae60;
+            background: #f0f8f3;
         }
         
         .upload-item h3 {
@@ -91,23 +91,23 @@
         
         .file-label {
             display: inline-block;
-            padding: 12px 25px;
-            background: #667eea;
+            padding: 10px 20px;
+            background: #3498db;
             color: white;
-            border-radius: 8px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: background 0.2s ease;
             font-weight: 500;
         }
         
         .file-label:hover {
-            background: #5a67d8;
+            background: #2980b9;
         }
         
         .file-name {
             margin-top: 10px;
             font-size: 0.9rem;
-            color: #28a745;
+            color: #27ae60;
             font-weight: 500;
         }
         
@@ -120,32 +120,32 @@
         }
         
         .btn {
-            padding: 15px 30px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 180px;
+            transition: all 0.2s ease;
+            min-width: 160px;
         }
         
         .btn-validate {
-            background: #17a2b8;
+            background: #95a5a6;
             color: white;
         }
         
         .btn-validate:hover {
-            background: #138496;
+            background: #7f8c8d;
         }
         
         .btn-calculate {
-            background: #28a745;
+            background: #27ae60;
             color: white;
         }
         
         .btn-calculate:hover {
-            background: #218838;
+            background: #229954;
         }
         
         .btn:disabled {
@@ -157,7 +157,7 @@
             margin-top: 40px;
             padding: 30px;
             background: #f8f9fa;
-            border-radius: 15px;
+            border-radius: 8px;
             display: none;
         }
         
@@ -171,13 +171,13 @@
         .summary-card {
             background: white;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
         }
         
         .summary-card h3 {
-            color: #667eea;
+            color: #2c3e50;
             font-size: 0.9rem;
             margin-bottom: 10px;
         }
@@ -190,17 +190,17 @@
         
         .monthly-results {
             background: white;
-            border-radius: 10px;
+            border-radius: 4px;
             overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .monthly-results h3 {
-            background: #667eea;
+            background: #34495e;
             color: white;
-            padding: 20px;
+            padding: 15px 20px;
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         
         .month-item {
@@ -251,10 +251,10 @@
         }
         
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #667eea;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
@@ -310,13 +310,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Amazon売上利益計算システム</h1>
+            <h1>Amazon売上利益計算システム</h1>
             <p>複数のAmazonアカウントと販路のCSVデータを統合し、月次利益を自動計算</p>
         </div>
         
         <div class="main-content">
             <div class="upload-section">
-                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">📁 CSVファイルをアップロード</h2>
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">CSVファイルをアップロード</h2>
                 
                 <div class="upload-grid">
                     <div class="upload-item" id="upload-makad-a-m">
@@ -364,8 +364,8 @@
             </div>
             
             <div class="button-section">
-                <button class="btn btn-validate" onclick="validateFiles()">🔍 ファイル検証</button>
-                <button class="btn btn-calculate" onclick="calculateProfit()">🚀 利益計算を実行</button>
+                <button class="btn btn-validate" onclick="validateFiles()">ファイル検証</button>
+                <button class="btn btn-calculate" onclick="calculateProfit()">利益計算を実行</button>
             </div>
             
             <div class="loading" id="loading">
@@ -376,7 +376,7 @@
             <div id="message-area"></div>
             
             <div class="results-section" id="results">
-                <h2 style="margin-bottom: 30px; color: #333;">📊 計算結果</h2>
+                <h2 style="margin-bottom: 30px; color: #333;">計算結果</h2>
                 
                 <div class="summary-cards" id="summary-cards">
                     <!-- サマリー情報がここに表示されます -->

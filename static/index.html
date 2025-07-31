@@ -326,11 +326,11 @@
                         <div class="file-name" id="name-makad-a-m"></div>
                     </div>
                     
-                    <div class="upload-item" id="upload-mercari-a-m">
-                        <h3>メルカリショップ売上データ (A-M)</h3>
-                        <input type="file" class="file-input" id="file-mercari-a-m" accept=".csv">
-                        <label for="file-mercari-a-m" class="file-label">ファイルを選択</label>
-                        <div class="file-name" id="name-mercari-a-m"></div>
+                    <div class="upload-item" id="upload-mercari">
+                        <h3>メルカリショップ売上データ</h3>
+                        <input type="file" class="file-input" id="file-mercari" accept=".csv">
+                        <label for="file-mercari" class="file-label">ファイルを選択</label>
+                        <div class="file-name" id="name-mercari"></div>
                     </div>
                     
                     <div class="upload-item" id="upload-hanro-a-m">
@@ -345,13 +345,6 @@
                         <input type="file" class="file-input" id="file-makad-o-aa" accept=".csv">
                         <label for="file-makad-o-aa" class="file-label">ファイルを選択</label>
                         <div class="file-name" id="name-makad-o-aa"></div>
-                    </div>
-                    
-                    <div class="upload-item" id="upload-mercari-o-aa">
-                        <h3>メルカリショップ売上データ (O-AA)</h3>
-                        <input type="file" class="file-input" id="file-mercari-o-aa" accept=".csv">
-                        <label for="file-mercari-o-aa" class="file-label">ファイルを選択</label>
-                        <div class="file-name" id="name-mercari-o-aa"></div>
                     </div>
                     
                     <div class="upload-item" id="upload-hanro-o-aa">
@@ -431,8 +424,8 @@
 
             // ファイルを FormData に追加
             const fileInputs = [
-                'file-makad-a-m', 'file-mercari-a-m', 'file-hanro-a-m',
-                'file-makad-o-aa', 'file-mercari-o-aa', 'file-hanro-o-aa'
+                'file-makad-a-m', 'file-mercari', 'file-hanro-a-m',
+                'file-makad-o-aa', 'file-hanro-o-aa'
             ];
 
             fileInputs.forEach(inputId => {
@@ -485,8 +478,8 @@
 
             // ファイルを FormData に追加
             const fileInputs = [
-                'file-makad-a-m', 'file-mercari-a-m', 'file-hanro-a-m',
-                'file-makad-o-aa', 'file-mercari-o-aa', 'file-hanro-o-aa'
+                'file-makad-a-m', 'file-mercari', 'file-hanro-a-m',
+                'file-makad-o-aa', 'file-hanro-o-aa'
             ];
 
             fileInputs.forEach(inputId => {

@@ -275,8 +275,8 @@ def upload_and_calculate():
         file_paths = {}
         
         file_keys = [
-            'makad_a_m', 'mercari_a_m', 'hanro_a_m',
-            'makad_o_aa', 'mercari_o_aa', 'hanro_o_aa'
+            'makad_a_m', 'mercari', 'hanro_a_m',
+            'makad_o_aa', 'hanro_o_aa'
         ]
         
         for key in file_keys:
@@ -358,7 +358,7 @@ def validate_files():
         uploaded_files = {}
         file_paths = {}
         
-        file_keys = ['makad_a_m', 'mercari_a_m', 'hanro_a_m', 'makad_o_aa', 'mercari_o_aa', 'hanro_o_aa']
+        file_keys = ['makad_a_m', 'mercari', 'hanro_a_m', 'makad_o_aa', 'hanro_o_aa']
         
         for key in file_keys:
             if key in request.files:

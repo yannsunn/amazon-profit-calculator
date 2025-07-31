@@ -90,6 +90,8 @@
             text-align: center;
             transition: all 0.2s ease;
             background: #fafafa;
+            position: relative;
+            cursor: pointer;
         }
         
         .upload-item:hover {
@@ -100,6 +102,33 @@
         .upload-item.has-file {
             border-color: #27ae60;
             background: #f0f8f3;
+        }
+        
+        .upload-item.drag-over {
+            border-color: #3498db;
+            background: #e3f2fd;
+            transform: scale(1.02);
+        }
+        
+        .upload-item.drag-over::before {
+            content: 'ファイルをドロップしてください';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #3498db;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 4px;
+        }
+        
+        .upload-instruction {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-top: 10px;
         }
         
         .upload-item h3 {
@@ -345,17 +374,19 @@
                 <div class="account-section">
                     <div class="account-title">A-M アカウント</div>
                     <div class="upload-grid">
-                        <div class="upload-item" id="upload-makad-a-m">
+                        <div class="upload-item" id="upload-makad-a-m" data-file-type="makad-a-m">
                             <h3>マカド売上データ</h3>
                             <input type="file" class="file-input" id="file-makad-a-m" accept=".csv">
                             <label for="file-makad-a-m" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
                             <div class="file-name" id="name-makad-a-m"></div>
                         </div>
                         
-                        <div class="upload-item" id="upload-hanro-a-m">
+                        <div class="upload-item" id="upload-hanro-a-m" data-file-type="hanro-a-m">
                             <h3>販路プラス売上データ</h3>
                             <input type="file" class="file-input" id="file-hanro-a-m" accept=".csv">
                             <label for="file-hanro-a-m" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
                             <div class="file-name" id="name-hanro-a-m"></div>
                         </div>
                     </div>
@@ -364,10 +395,11 @@
                 <!-- メルカリショップ -->
                 <div class="mercari-section">
                     <div class="account-title">メルカリショップ</div>
-                    <div class="upload-item" id="upload-mercari">
+                    <div class="upload-item" id="upload-mercari" data-file-type="mercari">
                         <h3>メルカリショップ売上データ</h3>
                         <input type="file" class="file-input" id="file-mercari" accept=".csv">
                         <label for="file-mercari" class="file-label">ファイルを選択</label>
+                        <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
                         <div class="file-name" id="name-mercari"></div>
                     </div>
                 </div>
@@ -376,17 +408,19 @@
                 <div class="account-section">
                     <div class="account-title">O-AA アカウント</div>
                     <div class="upload-grid">
-                        <div class="upload-item" id="upload-makad-o-aa">
+                        <div class="upload-item" id="upload-makad-o-aa" data-file-type="makad-o-aa">
                             <h3>マカド売上データ</h3>
                             <input type="file" class="file-input" id="file-makad-o-aa" accept=".csv">
                             <label for="file-makad-o-aa" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
                             <div class="file-name" id="name-makad-o-aa"></div>
                         </div>
                         
-                        <div class="upload-item" id="upload-hanro-o-aa">
+                        <div class="upload-item" id="upload-hanro-o-aa" data-file-type="hanro-o-aa">
                             <h3>販路プラス売上データ</h3>
                             <input type="file" class="file-input" id="file-hanro-o-aa" accept=".csv">
                             <label for="file-hanro-o-aa" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
                             <div class="file-name" id="name-hanro-o-aa"></div>
                         </div>
                     </div>
@@ -424,6 +458,27 @@
 
     <script>
         // ファイル選択処理
+        function handleFileSelect(file, uploadItem) {
+            const fileInput = uploadItem.querySelector('.file-input');
+            const fileName = uploadItem.querySelector('.file-name');
+            
+            // ファイル形式チェック
+            if (file && file.name.toLowerCase().endsWith('.csv')) {
+                // FileListオブジェクトを作成してinputに設定
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                
+                fileName.textContent = file.name;
+                uploadItem.classList.add('has-file');
+                uploadItem.classList.remove('drag-over');
+            } else {
+                showMessage('CSVファイルのみアップロード可能です。', 'error');
+                uploadItem.classList.remove('drag-over');
+            }
+        }
+        
+        // 通常のファイル選択処理
         document.querySelectorAll('.file-input').forEach(input => {
             input.addEventListener('change', function() {
                 const uploadItem = this.closest('.upload-item');
@@ -437,6 +492,57 @@
                     uploadItem.classList.remove('has-file');
                 }
             });
+        });
+        
+        // ドラッグ&ドロップ処理
+        document.querySelectorAll('.upload-item').forEach(uploadItem => {
+            // ドラッグオーバー時の処理
+            uploadItem.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('drag-over');
+            });
+            
+            // ドラッグリーブ時の処理
+            uploadItem.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                // 子要素から出た場合は無視
+                if (!this.contains(e.relatedTarget)) {
+                    this.classList.remove('drag-over');
+                }
+            });
+            
+            // ドロップ時の処理
+            uploadItem.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0], this);
+                }
+            });
+            
+            // クリック時の処理（既存のラベルクリックと同じ動作）
+            uploadItem.addEventListener('click', function(e) {
+                // ラベルやinputがクリックされた場合は無視
+                if (e.target.tagName === 'LABEL' || e.target.tagName === 'INPUT') {
+                    return;
+                }
+                
+                const fileInput = this.querySelector('.file-input');
+                fileInput.click();
+            });
+        });
+        
+        // ページ全体でのドラッグ&ドロップを無効化（ブラウザのデフォルト動作を防ぐ）
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
         });
 
         // メッセージ表示

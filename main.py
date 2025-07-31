@@ -81,8 +81,8 @@ def extract_month_from_date(date_str):
     except:
         return "2025-06"
 
-def process_makad_data(data):
-    """マカドデータ処理（軽量版）"""
+def process_makad_data(data, account_type='a_m'):
+    """マカドデータ処理（スプレッドシート対応版）"""
     try:
         results = {}
         
@@ -101,22 +101,44 @@ def process_makad_data(data):
             
             if month not in results:
                 results[month] = {
-                    'Amazon': 0,
-                    'プラットフォーム手数料_Amazon': 0,
+                    # 売上高セクション
+                    'Amazon' if account_type == 'a_m' else 'Amazon2': 0,
+                    'メルカリShops': 0,
+                    'バンコ+': 0,
+                    'Yahoo!ショッピング': 0,
+                    'プリマアプリ': 0,
+                    
+                    # 経費セクション  
+                    'プラットフォーム手数料_Amazon' if account_type == 'a_m' else 'プラットフォーム手数料_Amazon2': 0,
+                    'プラットフォーム手数料_メルカリ': 0,
+                    '運送費（送料）': 0,
+                    
+                    # 利益セクション
                     '売上総利益': 0,
                     '売上高合計': 0
                 }
             
             # 金額データを抽出
+            amazon_key = 'Amazon' if account_type == 'a_m' else 'Amazon2'
+            fee_key = 'プラットフォーム手数料_Amazon' if account_type == 'a_m' else 'プラットフォーム手数料_Amazon2'
+            
             for key, value in row.items():
                 try:
                     num_value = float(str(value).replace(',', '').replace('¥', '')) if value else 0
                     
-                    if '販売価格' in key or '売上' in key:
-                        results[month]['Amazon'] += num_value
+                    if '販売価格' in key:
+                        results[month][amazon_key] += num_value
                         results[month]['売上高合計'] += num_value
-                    elif '手数料' in key:
-                        results[month]['プラットフォーム手数料_Amazon'] += num_value
+                    elif '送料' in key:
+                        results[month][amazon_key] += num_value
+                        results[month]['運送費（送料）'] += num_value
+                        results[month]['売上高合計'] += num_value
+                    elif 'ポイント' in key or '割引' in key:
+                        # ポイントと割引は売上から差し引く
+                        results[month][amazon_key] -= num_value
+                        results[month]['売上高合計'] -= num_value
+                    elif '手数料' in key and 'Amazon' in key:
+                        results[month][fee_key] += num_value
                     elif '利益' in key or '粗利' in key:
                         results[month]['売上総利益'] += num_value
                 except:
@@ -133,7 +155,7 @@ def process_makad_data(data):
         return {}
 
 def process_mercari_data(data):
-    """メルカリショップデータ処理（軽量版）"""
+    """メルカリショップデータ処理（スプレッドシート対応版）"""
     try:
         results = {}
         
@@ -152,7 +174,21 @@ def process_mercari_data(data):
             
             if month not in results:
                 results[month] = {
+                    # 売上高セクション
+                    'Amazon': 0,
+                    'Amazon2': 0,
                     'メルカリShops': 0,
+                    'バンコ+': 0,
+                    'Yahoo!ショッピング': 0,
+                    'プリマアプリ': 0,
+                    
+                    # 経費セクション
+                    'プラットフォーム手数料_Amazon': 0,
+                    'プラットフォーム手数料_Amazon2': 0,
+                    'プラットフォーム手数料_メルカリ': 0,
+                    '運送費（送料）': 0,
+                    
+                    # 利益セクション
                     '売上総利益': 0,
                     '売上高合計': 0
                 }
@@ -165,8 +201,12 @@ def process_mercari_data(data):
                     if '売上' in key and '税込' in key:
                         results[month]['メルカリShops'] += num_value
                         results[month]['売上高合計'] += num_value
-                    elif '利益' in key:
+                    elif '販売手数料' in key and '税込' in key:
+                        results[month]['プラットフォーム手数料_メルカリ'] += num_value
+                    elif '販売利益' in key or '利益' in key:
                         results[month]['売上総利益'] += num_value
+                    elif '送料' in key:
+                        results[month]['運送費（送料）'] += num_value
                 except:
                     continue
         
@@ -180,8 +220,8 @@ def process_mercari_data(data):
         logger.error(f"メルカリショップデータ処理エラー: {e}")
         return {}
 
-def process_hanro_data(data):
-    """販路プラスデータ処理（軽量版）"""
+def process_hanro_data(data, account_type='a_m'):
+    """販路プラスデータ処理（スプレッドシート対応版）"""
     try:
         results = {}
         
@@ -200,28 +240,45 @@ def process_hanro_data(data):
             
             if month not in results:
                 results[month] = {
+                    # 売上高セクション
+                    'Amazon': 0,
+                    'Amazon2': 0,
+                    'メルカリShops': 0,
                     'バンコ+': 0,
                     'Yahoo!ショッピング': 0,
+                    'プリマアプリ': 0,
+                    
+                    # 経費セクション
+                    'プラットフォーム手数料_Amazon': 0,
+                    'プラットフォーム手数料_Amazon2': 0,
+                    'プラットフォーム手数料_メルカリ': 0,
+                    '運送費（送料）': 0,
+                    
+                    # 利益セクション
                     '売上総利益': 0,
                     '売上高合計': 0
                 }
             
             # 販路情報
-            mall = row.get('mall', '')
+            mall = row.get('mall', '').lower()
             
             # 金額データを抽出
             for key, value in row.items():
                 try:
                     num_value = float(str(value).replace(',', '').replace('¥', '')) if value else 0
                     
-                    if 'netPrice' in key or '価格' in key:
+                    if 'netPrice' in key or '価格' in key or '売上' in key:
                         if mall == 'rakuten':
                             results[month]['バンコ+'] += num_value
                         elif mall == 'yahoo':
                             results[month]['Yahoo!ショッピング'] += num_value
+                        elif mall == 'mercari':
+                            results[month]['メルカリShops'] += num_value
                         results[month]['売上高合計'] += num_value
                     elif 'profit' in key or '利益' in key:
                         results[month]['売上総利益'] += num_value
+                    elif '送料' in key or 'shipping' in key.lower():
+                        results[month]['運送費（送料）'] += num_value
                 except:
                     continue
         
@@ -236,13 +293,32 @@ def process_hanro_data(data):
         return {}
 
 def merge_monthly_data(all_results):
-    """月別データをマージ"""
+    """月別データをマージ（スプレッドシート対応）"""
     merged = {}
     
     for source_results in all_results:
         for month, data in source_results.items():
             if month not in merged:
-                merged[month] = {}
+                # スプレッドシートの全項目を初期化
+                merged[month] = {
+                    # 売上高セクション
+                    'Amazon': 0,
+                    'Amazon2': 0,
+                    'メルカリShops': 0,
+                    'バンコ+': 0,
+                    'Yahoo!ショッピング': 0,
+                    'プリマアプリ': 0,
+                    
+                    # 経費セクション
+                    'プラットフォーム手数料_Amazon': 0,
+                    'プラットフォーム手数料_Amazon2': 0,
+                    'プラットフォーム手数料_メルカリ': 0,
+                    '運送費（送料）': 0,
+                    
+                    # 利益セクション
+                    '売上総利益': 0,
+                    '売上高合計': 0
+                }
             
             for key, value in data.items():
                 if key in merged[month]:
@@ -251,6 +327,46 @@ def merge_monthly_data(all_results):
                     merged[month][key] = value
     
     return merged
+
+def convert_to_spreadsheet_format(merged_results):
+    """マージされたデータをスプレッドシート形式に変換"""
+    spreadsheet_data = []
+    
+    for month_key, data in sorted(merged_results.items()):
+        # 年月を日本語形式に変換
+        try:
+            year, month = month_key.split('-')
+            month_display = f"{year}年{int(month)}月"
+        except:
+            month_display = month_key
+        
+        # スプレッドシートの行データを作成
+        row_data = {
+            '年月': month_display,
+            '期間': month_key,
+            
+            # 売上高セクション
+            'Amazon（A-M）': data.get('Amazon', 0),
+            'Amazon2（O-AA）': data.get('Amazon2', 0), 
+            'メルカリShops': data.get('メルカリShops', 0),
+            'バンコ+（楽天）': data.get('バンコ+', 0),
+            'Yahoo!ショッピング': data.get('Yahoo!ショッピング', 0),
+            'プリマアプリ': data.get('プリマアプリ', 0),
+            
+            # 経費セクション
+            'プラットフォーム手数料_Amazon': data.get('プラットフォーム手数料_Amazon', 0),
+            'プラットフォーム手数料_Amazon2': data.get('プラットフォーム手数料_Amazon2', 0),
+            'プラットフォーム手数料_メルカリ': data.get('プラットフォーム手数料_メルカリ', 0),
+            '運送費（送料）': data.get('運送費（送料）', 0),
+            
+            # 利益セクション
+            '売上総利益': data.get('売上総利益', 0),
+            '売上高合計': data.get('売上高合計', 0)
+        }
+        
+        spreadsheet_data.append(row_data)
+    
+    return spreadsheet_data
 
 @app.route('/')
 def index():
@@ -268,7 +384,7 @@ def health_check():
 
 @app.route('/api/profit/upload', methods=['POST'])
 def upload_and_calculate():
-    """ファイルアップロードと利益計算"""
+    """ファイルアップロードと利益計算（スプレッドシート対応）"""
     try:
         # アップロードされたファイルを確認
         uploaded_files = {}
@@ -299,12 +415,15 @@ def upload_and_calculate():
             try:
                 data = safe_read_csv(file_path)
                 
+                # アカウントタイプを判定
+                account_type = 'o_aa' if 'o_aa' in key else 'a_m'
+                
                 if 'makad' in key:
-                    results = process_makad_data(data)
+                    results = process_makad_data(data, account_type)
                 elif 'mercari' in key:
                     results = process_mercari_data(data)
                 elif 'hanro' in key:
-                    results = process_hanro_data(data)
+                    results = process_hanro_data(data, account_type)
                 else:
                     continue
                 
@@ -316,6 +435,9 @@ def upload_and_calculate():
         
         # 月別データをマージ
         merged_results = merge_monthly_data(all_results)
+        
+        # スプレッドシート形式に変換
+        spreadsheet_data = convert_to_spreadsheet_format(merged_results)
         
         # サマリー計算
         total_sales = sum(data.get('売上高合計', 0) for data in merged_results.values())
@@ -340,6 +462,7 @@ def upload_and_calculate():
             'success': True,
             'message': f'{len(uploaded_files)}個のファイルを処理しました',
             'results': merged_results,
+            'spreadsheet_data': spreadsheet_data,
             'summary': summary,
             'uploaded_files': uploaded_files
         })

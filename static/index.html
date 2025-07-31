@@ -83,6 +83,15 @@
             margin: 0 auto;
         }
         
+        .section-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 0.9rem;
+        }
+        
         .upload-item {
             border: 2px dashed #e0e0e0;
             border-radius: 8px;
@@ -685,33 +694,100 @@
                 </div>
             `;
 
-            // 月別データ表示
+            // スプレッドシートデータ表示
             const monthlyData = document.getElementById('monthly-data');
             monthlyData.innerHTML = '';
-
-            Object.entries(result.results).forEach(([month, data]) => {
-                const monthItem = document.createElement('div');
-                monthItem.className = 'month-item';
-                
-                let dataItems = '';
-                Object.entries(data).forEach(([key, value]) => {
-                    if (value > 0) {
-                        dataItems += `
-                            <div class="data-item">
-                                <span class="data-label">${key}</span>
-                                <span class="data-value">¥${value.toLocaleString()}</span>
-                            </div>
-                        `;
+            
+            if (result.spreadsheet_data && result.spreadsheet_data.length > 0) {
+                // スプレッドシート形式で表示
+                result.spreadsheet_data.forEach(rowData => {
+                    const monthItem = document.createElement('div');
+                    monthItem.className = 'month-item';
+                    
+                    // 売上高セクション
+                    const salesItems = [
+                        { label: 'Amazon（A-M）', value: rowData['Amazon（A-M）'] },
+                        { label: 'Amazon2（O-AA）', value: rowData['Amazon2（O-AA）'] },
+                        { label: 'メルカリShops', value: rowData['メルカリShops'] },
+                        { label: 'バンコ+（楽天）', value: rowData['バンコ+（楽天）'] },
+                        { label: 'Yahoo!ショッピング', value: rowData['Yahoo!ショッピング'] },
+                        { label: 'プリマアプリ', value: rowData['プリマアプリ'] }
+                    ];
+                    
+                    // 経費セクション
+                    const expenseItems = [
+                        { label: 'プラットフォーム手数料_Amazon', value: rowData['プラットフォーム手数料_Amazon'] },
+                        { label: 'プラットフォーム手数料_Amazon2', value: rowData['プラットフォーム手数料_Amazon2'] },
+                        { label: 'プラットフォーム手数料_メルカリ', value: rowData['プラットフォーム手数料_メルカリ'] },
+                        { label: '運送費（送料）', value: rowData['運送費（送料）'] }
+                    ];
+                    
+                    // 利益セクション
+                    const profitItems = [
+                        { label: '売上総利益', value: rowData['売上総利益'] },
+                        { label: '売上高合計', value: rowData['売上高合計'] }
+                    ];
+                    
+                    // HTMLを構築
+                    let sectionsHtml = '';
+                    
+                    // 売上高セクション
+                    const salesHtml = salesItems.filter(item => item.value > 0)
+                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${item.value.toLocaleString()}</span></div>`)
+                        .join('');
+                    if (salesHtml) {
+                        sectionsHtml += `<div class="section-title">売上高</div>${salesHtml}`;
                     }
+                    
+                    // 経費セクション  
+                    const expenseHtml = expenseItems.filter(item => item.value > 0)
+                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${item.value.toLocaleString()}</span></div>`)
+                        .join('');
+                    if (expenseHtml) {
+                        sectionsHtml += `<div class="section-title">経費</div>${expenseHtml}`;
+                    }
+                    
+                    // 利益セクション
+                    const profitHtml = profitItems.filter(item => item.value > 0)
+                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${item.value.toLocaleString()}</span></div>`)
+                        .join('');
+                    if (profitHtml) {
+                        sectionsHtml += `<div class="section-title">利益</div>${profitHtml}`;
+                    }
+                    
+                    monthItem.innerHTML = `
+                        <div class="month-header">${rowData['年月']}</div>
+                        <div class="month-data">${sectionsHtml}</div>
+                    `;
+                    
+                    monthlyData.appendChild(monthItem);
                 });
+            } else {
+                // フォールバック: 従来の表示
+                Object.entries(result.results).forEach(([month, data]) => {
+                    const monthItem = document.createElement('div');
+                    monthItem.className = 'month-item';
+                    
+                    let dataItems = '';
+                    Object.entries(data).forEach(([key, value]) => {
+                        if (value > 0) {
+                            dataItems += `
+                                <div class="data-item">
+                                    <span class="data-label">${key}</span>
+                                    <span class="data-value">¥${value.toLocaleString()}</span>
+                                </div>
+                            `;
+                        }
+                    });
 
-                monthItem.innerHTML = `
-                    <div class="month-header">${month}</div>
-                    <div class="month-data">${dataItems}</div>
-                `;
-                
-                monthlyData.appendChild(monthItem);
-            });
+                    monthItem.innerHTML = `
+                        <div class="month-header">${month}</div>
+                        <div class="month-data">${dataItems}</div>
+                    `;
+                    
+                    monthlyData.appendChild(monthItem);
+                });
+            }
 
             // 結果セクションを表示
             document.getElementById('results').style.display = 'block';

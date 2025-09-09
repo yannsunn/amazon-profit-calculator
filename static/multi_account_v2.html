@@ -115,9 +115,6 @@
             <!-- Platform Tabs -->
             <div class="platform-tabs">
                 <button class="platform-tab active" data-platform="amazon">Amazon</button>
-                <button class="platform-tab" data-platform="rakuten">楽天</button>
-                <button class="platform-tab" data-platform="yahoo">Yahoo!</button>
-                <button class="platform-tab" data-platform="qoo10">Qoo10</button>
                 <button class="platform-tab" data-platform="mercari">メルカリShops</button>
             </div>
 
@@ -195,131 +192,6 @@
                     </div>
                 </div>
 
-                <!-- Rakuten Content -->
-                <div id="rakuten-content" class="platform-content">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                        <!-- Account 1 -->
-                        <div class="p-4 border rounded-lg space-y-4">
-                            <h3 class="font-semibold text-lg text-center text-indigo-700">アカウント 1</h3>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">楽天売上CSV</label>
-                                <label for="rakutenSales1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameRakutenSales1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="rakutenSales1" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">楽天経費CSV</label>
-                                <label for="rakutenExpense1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameRakutenExpense1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="rakutenExpense1" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                        </div>
-                        <!-- Account 2 -->
-                        <div class="p-4 border rounded-lg space-y-4">
-                            <h3 class="font-semibold text-lg text-center text-teal-700">アカウント 2</h3>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">楽天売上CSV</label>
-                                <label for="rakutenSales2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameRakutenSales2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="rakutenSales2" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">楽天経費CSV</label>
-                                <label for="rakutenExpense2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameRakutenExpense2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="rakutenExpense2" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Yahoo Content -->
-                <div id="yahoo-content" class="platform-content">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                        <!-- Account 1 -->
-                        <div class="p-4 border rounded-lg space-y-4">
-                            <h3 class="font-semibold text-lg text-center text-indigo-700">アカウント 1</h3>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Yahoo!売上CSV</label>
-                                <label for="yahooSales1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameYahooSales1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="yahooSales1" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Yahoo!経費CSV</label>
-                                <label for="yahooExpense1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameYahooExpense1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="yahooExpense1" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                        </div>
-                        <!-- Account 2 -->
-                        <div class="p-4 border rounded-lg space-y-4">
-                            <h3 class="font-semibold text-lg text-center text-teal-700">アカウント 2</h3>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Yahoo!売上CSV</label>
-                                <label for="yahooSales2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameYahooSales2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="yahooSales2" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Yahoo!経費CSV</label>
-                                <label for="yahooExpense2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameYahooExpense2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="yahooExpense2" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Qoo10 Content -->
-                <div id="qoo10-content" class="platform-content">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                        <!-- Account 1 -->
-                        <div class="p-4 border rounded-lg space-y-4">
-                            <h3 class="font-semibold text-lg text-center text-indigo-700">アカウント 1</h3>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Qoo10売上CSV</label>
-                                <label for="qoo10Sales1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameQoo10Sales1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="qoo10Sales1" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Qoo10経費CSV</label>
-                                <label for="qoo10Expense1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameQoo10Expense1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="qoo10Expense1" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                        </div>
-                        <!-- Account 2 -->
-                        <div class="p-4 border rounded-lg space-y-4">
-                            <h3 class="font-semibold text-lg text-center text-teal-700">アカウント 2</h3>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Qoo10売上CSV</label>
-                                <label for="qoo10Sales2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameQoo10Sales2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="qoo10Sales2" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Qoo10経費CSV</label>
-                                <label for="qoo10Expense2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer">
-                                    <div class="text-center"><p id="fileNameQoo10Expense2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div>
-                                    <input id="qoo10Expense2" type="file" class="hidden" accept=".csv">
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Mercari Content -->
                 <div id="mercari-content" class="platform-content">
@@ -348,12 +220,6 @@
                 <div id="grandTotalResult"></div>
                 <div id="resultAccount1"></div>
                 <div id="resultAccount2"></div>
-                <div id="resultRakuten1"></div>
-                <div id="resultRakuten2"></div>
-                <div id="resultYahoo1"></div>
-                <div id="resultYahoo2"></div>
-                <div id="resultQoo101"></div>
-                <div id="resultQoo102"></div>
                 <div id="resultMercari"></div>
             </div>
         </main>
@@ -381,57 +247,19 @@
 
         // File inputs configuration
         const inputs = {
-            amazon: {
-                acc1: { 
-                    makad: { file: document.getElementById('makadFile1'), name: document.getElementById('fileNameMakad1') }, 
-                    hanro: { file: document.getElementById('hanroFile1'), name: document.getElementById('fileNameHanro1') }, 
-                    amazon: { file: document.getElementById('amazonFile1'), name: document.getElementById('fileNameAmazon1') }, 
-                    ad: { file: document.getElementById('adFile1'), name: document.getElementById('fileNameAd1') }, 
-                    container: document.getElementById('resultAccount1') 
-                },
-                acc2: { 
-                    makad: { file: document.getElementById('makadFile2'), name: document.getElementById('fileNameMakad2') }, 
-                    hanro: { file: document.getElementById('hanroFile2'), name: document.getElementById('fileNameHanro2') },
-                    amazon: { file: document.getElementById('amazonFile2'), name: document.getElementById('fileNameAmazon2') }, 
-                    ad: { file: document.getElementById('adFile2'), name: document.getElementById('fileNameAd2') }, 
-                    container: document.getElementById('resultAccount2') 
-                }
+            acc1: { 
+                makad: { file: document.getElementById('makadFile1'), name: document.getElementById('fileNameMakad1') }, 
+                hanro: { file: document.getElementById('hanroFile1'), name: document.getElementById('fileNameHanro1') }, 
+                amazon: { file: document.getElementById('amazonFile1'), name: document.getElementById('fileNameAmazon1') }, 
+                ad: { file: document.getElementById('adFile1'), name: document.getElementById('fileNameAd1') }, 
+                container: document.getElementById('resultAccount1') 
             },
-            rakuten: {
-                acc1: {
-                    sales: { file: document.getElementById('rakutenSales1'), name: document.getElementById('fileNameRakutenSales1') },
-                    expense: { file: document.getElementById('rakutenExpense1'), name: document.getElementById('fileNameRakutenExpense1') },
-                    container: document.getElementById('resultRakuten1')
-                },
-                acc2: {
-                    sales: { file: document.getElementById('rakutenSales2'), name: document.getElementById('fileNameRakutenSales2') },
-                    expense: { file: document.getElementById('rakutenExpense2'), name: document.getElementById('fileNameRakutenExpense2') },
-                    container: document.getElementById('resultRakuten2')
-                }
-            },
-            yahoo: {
-                acc1: {
-                    sales: { file: document.getElementById('yahooSales1'), name: document.getElementById('fileNameYahooSales1') },
-                    expense: { file: document.getElementById('yahooExpense1'), name: document.getElementById('fileNameYahooExpense1') },
-                    container: document.getElementById('resultYahoo1')
-                },
-                acc2: {
-                    sales: { file: document.getElementById('yahooSales2'), name: document.getElementById('fileNameYahooSales2') },
-                    expense: { file: document.getElementById('yahooExpense2'), name: document.getElementById('fileNameYahooExpense2') },
-                    container: document.getElementById('resultYahoo2')
-                }
-            },
-            qoo10: {
-                acc1: {
-                    sales: { file: document.getElementById('qoo10Sales1'), name: document.getElementById('fileNameQoo10Sales1') },
-                    expense: { file: document.getElementById('qoo10Expense1'), name: document.getElementById('fileNameQoo10Expense1') },
-                    container: document.getElementById('resultQoo101')
-                },
-                acc2: {
-                    sales: { file: document.getElementById('qoo10Sales2'), name: document.getElementById('fileNameQoo10Sales2') },
-                    expense: { file: document.getElementById('qoo10Expense2'), name: document.getElementById('fileNameQoo10Expense2') },
-                    container: document.getElementById('resultQoo102')
-                }
+            acc2: { 
+                makad: { file: document.getElementById('makadFile2'), name: document.getElementById('fileNameMakad2') }, 
+                hanro: { file: document.getElementById('hanroFile2'), name: document.getElementById('fileNameHanro2') },
+                amazon: { file: document.getElementById('amazonFile2'), name: document.getElementById('fileNameAmazon2') }, 
+                ad: { file: document.getElementById('adFile2'), name: document.getElementById('fileNameAd2') }, 
+                container: document.getElementById('resultAccount2') 
             },
             mercari: {
                 sales: { file: document.getElementById('mercariFile'), name: document.getElementById('fileNameMercari') },
@@ -446,51 +274,31 @@
         let processedDataStore = {};
 
         // Setup file input listeners
-        Object.values(inputs).forEach(platform => {
-            if (platform.acc1) {
-                // For platforms with two accounts
-                [platform.acc1, platform.acc2].forEach(acc => {
-                    Object.values(acc).forEach(input => {
-                        if (input.file) {
-                            input.file.addEventListener('change', () => {
-                                input.name.textContent = input.file.files.length > 0 ? input.file.files[0].name : 'ファイルを選択';
-                            });
-                            setupDragDrop(input.file, input.file.parentElement, input.name);
-                        }
+        Object.values(inputs).forEach(acc => {
+            Object.values(acc).forEach(input => {
+                if (input.file) {
+                    input.file.addEventListener('change', () => {
+                        input.name.textContent = input.file.files.length > 0 ? input.file.files[0].name : 'ファイルを選択';
                     });
-                });
-            } else {
-                // For Mercari (single account)
-                if (platform.sales && platform.sales.file) {
-                    platform.sales.file.addEventListener('change', () => {
-                        platform.sales.name.textContent = platform.sales.file.files.length > 0 ? platform.sales.file.files[0].name : 'ファイルを選択';
-                    });
-                    setupDragDrop(platform.sales.file, platform.sales.file.parentElement, platform.sales.name);
+                    setupDragDrop(input.file, input.file.parentElement, input.name);
                 }
-            }
+            });
         });
 
         // Swap accounts functionality
         swapBtn.addEventListener('click', () => {
-            const platforms = ['amazon', 'rakuten', 'yahoo', 'qoo10'];
-            
-            platforms.forEach(platformName => {
-                const platform = inputs[platformName];
-                if (platform.acc1 && platform.acc2) {
-                    // Swap files for each input type
-                    Object.keys(platform.acc1).forEach(key => {
-                        if (key !== 'container' && platform.acc1[key].file && platform.acc2[key].file) {
-                            // Swap files
-                            const tempFiles = platform.acc1[key].file.files;
-                            const tempName = platform.acc1[key].name.textContent;
-                            
-                            platform.acc1[key].file.files = platform.acc2[key].file.files;
-                            platform.acc1[key].name.textContent = platform.acc2[key].name.textContent;
-                            
-                            platform.acc2[key].file.files = tempFiles;
-                            platform.acc2[key].name.textContent = tempName;
-                        }
-                    });
+            // Swap files for each input type
+            Object.keys(inputs.acc1).forEach(key => {
+                if (key !== 'container' && inputs.acc1[key].file && inputs.acc2[key].file) {
+                    // Swap files
+                    const tempFiles = inputs.acc1[key].file.files;
+                    const tempName = inputs.acc1[key].name.textContent;
+                    
+                    inputs.acc1[key].file.files = inputs.acc2[key].file.files;
+                    inputs.acc1[key].name.textContent = inputs.acc2[key].name.textContent;
+                    
+                    inputs.acc2[key].file.files = tempFiles;
+                    inputs.acc2[key].name.textContent = tempName;
                 }
             });
             
@@ -723,63 +531,60 @@
             };
         }
 
-        async function processPlatformData(salesFile, expenseFile, platform) {
-            if (!salesFile && !expenseFile) return null;
+        function renderFinalSummary(allData) {
+            const container = document.getElementById('finalSummaryResult');
+            container.innerHTML = '';
+            
+            const validData = allData.filter(d => d && d.accountSummary);
+            if (validData.length < 1) return;
 
-            const [salesResults, expenseResults] = await Promise.all([
-                parseCsv(salesFile, 'UTF-8'),
-                parseCsv(expenseFile, 'UTF-8')
-            ]);
+            const sales = {};
+            const fees = {};
+            const expenses = {};
+            let totalCost = 0;
 
-            const salesData = salesResults.data;
-            const expenseData = expenseResults.data;
-
-            let totalSales = 0;
-            let totalExpenses = 0;
-
-            // Process sales data based on platform
-            salesData.forEach(row => {
-                // Generic sales processing - look for common sales columns
-                const possibleSalesColumns = ['売上', '売上高', '売上金額', '販売金額', '受注金額', '決済金額'];
-                for (const col of possibleSalesColumns) {
-                    if (row[col] !== undefined) {
-                        totalSales += safeNumber(row[col]);
-                        break;
+            allData.forEach((data, index) => {
+                if (!data) return;
+                const accName = index === 0 ? " (アカウント1)" : index === 1 ? " (アカウント2)" : "";
+                
+                if (data.platformSummaries) {
+                    for(const [platform, summary] of Object.entries(data.platformSummaries)) {
+                        sales[platform + accName] = summary.sales;
+                        fees[platform + accName] = summary.fees;
+                        totalCost += summary.cost;
                     }
                 }
-            });
-
-            // Process expense data
-            expenseData.forEach(row => {
-                const possibleExpenseColumns = ['経費', '手数料', '費用', 'コスト', '支払い'];
-                for (const col of possibleExpenseColumns) {
-                    if (row[col] !== undefined) {
-                        totalExpenses += safeNumber(row[col]);
-                        break;
-                    }
+                if (data.expenseSummary && Object.keys(data.expenseSummary).length > 0) {
+                     for(const [expense, amount] of Object.entries(data.expenseSummary)) {
+                         expenses[expense + accName] = amount;
+                     }
+                } else if(index === 2 && data.accountSummary.totalExpenses !== 0) { // Mercari
+                     expenses["配送料" + accName] = data.accountSummary.totalExpenses;
                 }
             });
-
-            const finalProfit = totalSales - totalExpenses;
-
-            return {
-                accountSummary: { 
-                    totalSales, 
-                    totalGrossProfit: finalProfit, 
-                    totalExpenses: -totalExpenses, 
-                    finalProfit 
-                },
-                platformSummaries: {
-                    [platform]: { 
-                        sales: totalSales, 
-                        profit: finalProfit, 
-                        fees: totalExpenses, 
-                        cost: 0 
-                    }
-                },
-                orderDetails: [],
-                expenseSummary: { [`${platform}経費`]: -totalExpenses }
+            
+            const renderList = (title, data) => {
+                if (Object.keys(data).length === 0) return '';
+                return `
+                    <div class="p-4 border rounded-lg">
+                        <h4 class="font-semibold text-lg mb-2 text-center">${title}</h4>
+                        <ul class="divide-y">${Object.entries(data).map(([key, value]) => `<li class="py-1 flex justify-between"><span>${key}</span><span>${value.toLocaleString()}円</span></li>`).join('')}</ul>
+                    </div>`;
             };
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-bold mb-4 text-center">項目別 合計サマリー</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${renderList('各売上', sales)}
+                        ${renderList('各手数料', fees)}
+                        ${renderList('各経費', expenses)}
+                    </div>
+                     <div class="mt-6 pt-4 border-t text-center">
+                        <h4 class="font-semibold text-lg mb-2">仕入れ値 合計</h4>
+                        <p class="text-2xl font-bold text-gray-800">${totalCost.toLocaleString()}円</p>
+                    </div>
+                </div>`;
         }
         
         async function processMercariData(mercariFile) {
@@ -943,82 +748,27 @@
             processBtn.textContent = '処理中...';
 
             try {
-                // Process Amazon accounts
-                processedDataStore.amazonAcc1 = await processAccountData(
-                    inputs.amazon.acc1.makad.file.files[0], 
-                    inputs.amazon.acc1.hanro.file.files[0], 
-                    inputs.amazon.acc1.amazon.file.files[0], 
-                    inputs.amazon.acc1.ad.file.files[0]
+                processedDataStore.acc1 = await processAccountData(
+                    inputs.acc1.makad.file.files[0], 
+                    inputs.acc1.hanro.file.files[0], 
+                    inputs.acc1.amazon.file.files[0], 
+                    inputs.acc1.ad.file.files[0]
                 );
-                processedDataStore.amazonAcc2 = await processAccountData(
-                    inputs.amazon.acc2.makad.file.files[0], 
-                    inputs.amazon.acc2.hanro.file.files[0], 
-                    inputs.amazon.acc2.amazon.file.files[0], 
-                    inputs.amazon.acc2.ad.file.files[0]
+                processedDataStore.acc2 = await processAccountData(
+                    inputs.acc2.makad.file.files[0], 
+                    inputs.acc2.hanro.file.files[0], 
+                    inputs.acc2.amazon.file.files[0], 
+                    inputs.acc2.ad.file.files[0]
                 );
-
-                // Process Rakuten accounts
-                processedDataStore.rakutenAcc1 = await processPlatformData(
-                    inputs.rakuten.acc1.sales.file.files[0],
-                    inputs.rakuten.acc1.expense.file.files[0],
-                    '楽天'
-                );
-                processedDataStore.rakutenAcc2 = await processPlatformData(
-                    inputs.rakuten.acc2.sales.file.files[0],
-                    inputs.rakuten.acc2.expense.file.files[0],
-                    '楽天'
-                );
-
-                // Process Yahoo accounts
-                processedDataStore.yahooAcc1 = await processPlatformData(
-                    inputs.yahoo.acc1.sales.file.files[0],
-                    inputs.yahoo.acc1.expense.file.files[0],
-                    'Yahoo!'
-                );
-                processedDataStore.yahooAcc2 = await processPlatformData(
-                    inputs.yahoo.acc2.sales.file.files[0],
-                    inputs.yahoo.acc2.expense.file.files[0],
-                    'Yahoo!'
-                );
-
-                // Process Qoo10 accounts
-                processedDataStore.qoo10Acc1 = await processPlatformData(
-                    inputs.qoo10.acc1.sales.file.files[0],
-                    inputs.qoo10.acc1.expense.file.files[0],
-                    'Qoo10'
-                );
-                processedDataStore.qoo10Acc2 = await processPlatformData(
-                    inputs.qoo10.acc2.sales.file.files[0],
-                    inputs.qoo10.acc2.expense.file.files[0],
-                    'Qoo10'
-                );
-
-                // Process Mercari
                 processedDataStore.mercari = await processMercariData(inputs.mercari.sales.file.files[0]);
                 
-                // Render results
-                renderAccountResults(inputs.amazon.acc1.container, processedDataStore.amazonAcc1, 'Amazon アカウント1');
-                renderAccountResults(inputs.amazon.acc2.container, processedDataStore.amazonAcc2, 'Amazon アカウント2');
-                renderAccountResults(inputs.rakuten.acc1.container, processedDataStore.rakutenAcc1, '楽天 アカウント1');
-                renderAccountResults(inputs.rakuten.acc2.container, processedDataStore.rakutenAcc2, '楽天 アカウント2');
-                renderAccountResults(inputs.yahoo.acc1.container, processedDataStore.yahooAcc1, 'Yahoo! アカウント1');
-                renderAccountResults(inputs.yahoo.acc2.container, processedDataStore.yahooAcc2, 'Yahoo! アカウント2');
-                renderAccountResults(inputs.qoo10.acc1.container, processedDataStore.qoo10Acc1, 'Qoo10 アカウント1');
-                renderAccountResults(inputs.qoo10.acc2.container, processedDataStore.qoo10Acc2, 'Qoo10 アカウント2');
+                renderAccountResults(inputs.acc1.container, processedDataStore.acc1, 'アカウント1');
+                renderAccountResults(inputs.acc2.container, processedDataStore.acc2, 'アカウント2');
                 renderAccountResults(inputs.mercari.container, processedDataStore.mercari, 'メルカリShops');
 
-                const allData = [
-                    processedDataStore.amazonAcc1, 
-                    processedDataStore.amazonAcc2,
-                    processedDataStore.rakutenAcc1,
-                    processedDataStore.rakutenAcc2,
-                    processedDataStore.yahooAcc1,
-                    processedDataStore.yahooAcc2,
-                    processedDataStore.qoo10Acc1,
-                    processedDataStore.qoo10Acc2,
-                    processedDataStore.mercari
-                ];
+                const allData = [processedDataStore.acc1, processedDataStore.acc2, processedDataStore.mercari];
                 renderGrandTotal(allData);
+                renderFinalSummary(allData);
                 
                 showToast('処理が完了しました。');
             } catch (error) {

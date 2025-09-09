@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="複数アカウント対応 - Amazon売上利益計算システム">
+    <meta name="theme-color" content="#3498db">
+    <title>Amazon売上利益計算システム - 複数アカウント対応版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+        
+        .account-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .toggle-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .toggle-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .toggle-btn.active {
+            background: white;
+            color: #2c3e50;
+        }
+        
+        .swap-accounts-btn {
+            padding: 10px 20px;
+            background: #e74c3c;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .swap-accounts-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+        
+        .main-content {
+            padding: 40px;
+        }
+        
+        .platform-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .platform-tab {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .platform-tab:hover {
+            background: #e9ecef;
+        }
+        
+        .platform-tab.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .platform-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        .platform-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .account-selector {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .account-selector h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .account-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .account-btn {
+            flex: 1;
+            padding: 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .account-btn:hover {
+            background: #f8f9fa;
+        }
+        
+        .account-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .upload-item {
+            background: #fafafa;
+            border: 2px dashed #d0d0d0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .upload-item:hover {
+            border-color: #3498db;
+            background: #f0f8ff;
+        }
+        
+        .upload-item.has-file {
+            border-style: solid;
+            border-color: #27ae60;
+            background: #e8f8f5;
+        }
+        
+        .upload-label {
+            display: block;
+            cursor: pointer;
+            padding: 15px;
+        }
+        
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #7f8c8d;
+        }
+        
+        .upload-text {
+            color: #2c3e50;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .file-name {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .account-label {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            padding: 4px 10px;
+            background: #3498db;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .account-label.acc1 {
+            background: #e74c3c;
+        }
+        
+        .account-label.acc2 {
+            background: #27ae60;
+        }
+        
+        .mercari-section {
+            margin: 40px 0;
+            padding: 30px;
+            background: #fff5f5;
+            border-radius: 12px;
+            border: 2px solid #ffe0e0;
+        }
+        
+        .mercari-section h3 {
+            color: #e74c3c;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 40px 0;
+        }
+        
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .results-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+        
+        .results-section.show {
+            display: block;
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .result-value {
+            font-size: 1.5rem;
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .result-value.negative {
+            color: #e74c3c;
+        }
+        
+        .status-message {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .account-toggle {
+                position: static;
+                margin-top: 20px;
+                justify-content: center;
+            }
+            
+            .platform-tabs {
+                flex-direction: column;
+            }
+            
+            .platform-tab {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Amazon売上利益計算システム</h1>
+            <p>複数アカウント対応版 - 各販路のデータを統合管理</p>
+            <div class="account-toggle">
+                <button class="swap-accounts-btn" onclick="swapAccounts()">🔄 アカウント1↔2入替</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- プラットフォームタブ -->
+            <div class="platform-tabs">
+                <button class="platform-tab active" onclick="switchPlatform('amazon')">Amazon</button>
+                <button class="platform-tab" onclick="switchPlatform('rakuten')">楽天</button>
+                <button class="platform-tab" onclick="switchPlatform('yahoo')">Yahoo!</button>
+                <button class="platform-tab" onclick="switchPlatform('qoo10')">Qoo10</button>
+                <button class="platform-tab" onclick="switchPlatform('mercari')">メルカリShops</button>
+            </div>
+            
+            <!-- Amazon セクション -->
+            <div id="amazon-content" class="platform-content active">
+                <div class="account-selector">
+                    <h3>📦 Amazon アカウント選択</h3>
+                    <div class="account-buttons">
+                        <button class="account-btn active" onclick="selectAccount('amazon', 1, this)">アカウント 1</button>
+                        <button class="account-btn" onclick="selectAccount('amazon', 2, this)">アカウント 2</button>
+                        <button class="account-btn" onclick="selectAccount('amazon', 'both', this)">両方表示</button>
+                    </div>
+                    
+                    <div id="amazon-uploads" class="upload-grid">
+                        <!-- アカウント1 -->
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="amazon-sales-1" accept=".csv" onchange="handleFileSelect(this, 'amazon-sales-1')">
+                                <div class="file-name" id="file-amazon-sales-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="amazon-expense-1" accept=".csv" onchange="handleFileSelect(this, 'amazon-expense-1')">
+                                <div class="file-name" id="file-amazon-expense-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📢</div>
+                                <div class="upload-text">広告データ (CSV)</div>
+                                <input type="file" class="file-input" id="amazon-ad-1" accept=".csv" onchange="handleFileSelect(this, 'amazon-ad-1')">
+                                <div class="file-name" id="file-amazon-ad-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <!-- アカウント2 -->
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="amazon-sales-2" accept=".csv" onchange="handleFileSelect(this, 'amazon-sales-2')">
+                                <div class="file-name" id="file-amazon-sales-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="amazon-expense-2" accept=".csv" onchange="handleFileSelect(this, 'amazon-expense-2')">
+                                <div class="file-name" id="file-amazon-expense-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📢</div>
+                                <div class="upload-text">広告データ (CSV)</div>
+                                <input type="file" class="file-input" id="amazon-ad-2" accept=".csv" onchange="handleFileSelect(this, 'amazon-ad-2')">
+                                <div class="file-name" id="file-amazon-ad-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 楽天 セクション -->
+            <div id="rakuten-content" class="platform-content">
+                <div class="account-selector">
+                    <h3>🛍️ 楽天 アカウント選択</h3>
+                    <div class="account-buttons">
+                        <button class="account-btn active" onclick="selectAccount('rakuten', 1, this)">アカウント 1</button>
+                        <button class="account-btn" onclick="selectAccount('rakuten', 2, this)">アカウント 2</button>
+                        <button class="account-btn" onclick="selectAccount('rakuten', 'both', this)">両方表示</button>
+                    </div>
+                    
+                    <div id="rakuten-uploads" class="upload-grid">
+                        <!-- アカウント1 -->
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="rakuten-sales-1" accept=".csv" onchange="handleFileSelect(this, 'rakuten-sales-1')">
+                                <div class="file-name" id="file-rakuten-sales-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="rakuten-expense-1" accept=".csv" onchange="handleFileSelect(this, 'rakuten-expense-1')">
+                                <div class="file-name" id="file-rakuten-expense-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <!-- アカウント2 -->
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="rakuten-sales-2" accept=".csv" onchange="handleFileSelect(this, 'rakuten-sales-2')">
+                                <div class="file-name" id="file-rakuten-sales-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="rakuten-expense-2" accept=".csv" onchange="handleFileSelect(this, 'rakuten-expense-2')">
+                                <div class="file-name" id="file-rakuten-expense-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Yahoo セクション -->
+            <div id="yahoo-content" class="platform-content">
+                <div class="account-selector">
+                    <h3>🟣 Yahoo!ショッピング アカウント選択</h3>
+                    <div class="account-buttons">
+                        <button class="account-btn active" onclick="selectAccount('yahoo', 1, this)">アカウント 1</button>
+                        <button class="account-btn" onclick="selectAccount('yahoo', 2, this)">アカウント 2</button>
+                        <button class="account-btn" onclick="selectAccount('yahoo', 'both', this)">両方表示</button>
+                    </div>
+                    
+                    <div id="yahoo-uploads" class="upload-grid">
+                        <!-- アカウント1 -->
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="yahoo-sales-1" accept=".csv" onchange="handleFileSelect(this, 'yahoo-sales-1')">
+                                <div class="file-name" id="file-yahoo-sales-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="yahoo-expense-1" accept=".csv" onchange="handleFileSelect(this, 'yahoo-expense-1')">
+                                <div class="file-name" id="file-yahoo-expense-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <!-- アカウント2 -->
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="yahoo-sales-2" accept=".csv" onchange="handleFileSelect(this, 'yahoo-sales-2')">
+                                <div class="file-name" id="file-yahoo-sales-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="yahoo-expense-2" accept=".csv" onchange="handleFileSelect(this, 'yahoo-expense-2')">
+                                <div class="file-name" id="file-yahoo-expense-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Qoo10 セクション -->
+            <div id="qoo10-content" class="platform-content">
+                <div class="account-selector">
+                    <h3>🛒 Qoo10 アカウント選択</h3>
+                    <div class="account-buttons">
+                        <button class="account-btn active" onclick="selectAccount('qoo10', 1, this)">アカウント 1</button>
+                        <button class="account-btn" onclick="selectAccount('qoo10', 2, this)">アカウント 2</button>
+                        <button class="account-btn" onclick="selectAccount('qoo10', 'both', this)">両方表示</button>
+                    </div>
+                    
+                    <div id="qoo10-uploads" class="upload-grid">
+                        <!-- アカウント1 -->
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="qoo10-sales-1" accept=".csv" onchange="handleFileSelect(this, 'qoo10-sales-1')">
+                                <div class="file-name" id="file-qoo10-sales-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="1">
+                            <span class="account-label acc1">アカウント1</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="qoo10-expense-1" accept=".csv" onchange="handleFileSelect(this, 'qoo10-expense-1')">
+                                <div class="file-name" id="file-qoo10-expense-1">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <!-- アカウント2 -->
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="qoo10-sales-2" accept=".csv" onchange="handleFileSelect(this, 'qoo10-sales-2')">
+                                <div class="file-name" id="file-qoo10-sales-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-item" data-account="2" style="display:none;">
+                            <span class="account-label acc2">アカウント2</span>
+                            <label class="upload-label">
+                                <div class="upload-icon">💰</div>
+                                <div class="upload-text">経費データ (CSV)</div>
+                                <input type="file" class="file-input" id="qoo10-expense-2" accept=".csv" onchange="handleFileSelect(this, 'qoo10-expense-2')">
+                                <div class="file-name" id="file-qoo10-expense-2">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- メルカリShops セクション -->
+            <div id="mercari-content" class="platform-content">
+                <div class="mercari-section">
+                    <h3>🔴 メルカリShops (単一アカウント)</h3>
+                    <div class="upload-grid" style="max-width: 400px; margin: 0 auto;">
+                        <div class="upload-item">
+                            <label class="upload-label">
+                                <div class="upload-icon">📊</div>
+                                <div class="upload-text">売上データ (CSV)</div>
+                                <input type="file" class="file-input" id="mercari-sales" accept=".csv" onchange="handleFileSelect(this, 'mercari-sales')">
+                                <div class="file-name" id="file-mercari-sales">ファイルを選択してください</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- アクションボタン -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="processAllData()">
+                    📊 すべてのデータを処理
+                </button>
+                <button class="btn btn-secondary" onclick="clearAllData()">
+                    🔄 データをクリア
+                </button>
+            </div>
+            
+            <!-- 結果表示エリア -->
+            <div id="results" class="results-section">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #2c3e50;">📈 処理結果</h2>
+                <div id="results-content"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // グローバル変数
+        let uploadedFiles = {};
+        let accountMapping = {
+            amazon: { 1: 'アカウント1', 2: 'アカウント2' },
+            rakuten: { 1: 'アカウント1', 2: 'アカウント2' },
+            yahoo: { 1: 'アカウント1', 2: 'アカウント2' },
+            qoo10: { 1: 'アカウント1', 2: 'アカウント2' }
+        };
+        
+        // プラットフォーム切り替え
+        function switchPlatform(platform) {
+            // すべてのタブとコンテンツを非アクティブに
+            document.querySelectorAll('.platform-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.platform-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 選択されたタブとコンテンツをアクティブに
+            event.target.classList.add('active');
+            document.getElementById(`${platform}-content`).classList.add('active');
+        }
+        
+        // アカウント選択
+        function selectAccount(platform, account, button) {
+            // ボタンのアクティブ状態を更新
+            button.parentElement.querySelectorAll('.account-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // アップロードアイテムの表示/非表示
+            const uploads = document.getElementById(`${platform}-uploads`);
+            if (uploads) {
+                uploads.querySelectorAll('.upload-item').forEach(item => {
+                    const itemAccount = item.getAttribute('data-account');
+                    if (account === 'both') {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = itemAccount == account ? 'block' : 'none';
+                    }
+                });
+            }
+        }
+        
+        // アカウント入れ替え
+        function swapAccounts() {
+            const platforms = ['amazon', 'rakuten', 'yahoo', 'qoo10'];
+            
+            platforms.forEach(platform => {
+                // ファイルの入れ替え
+                const types = ['sales', 'expense', 'ad'];
+                types.forEach(type => {
+                    const file1Id = `${platform}-${type}-1`;
+                    const file2Id = `${platform}-${type}-2`;
+                    const input1 = document.getElementById(file1Id);
+                    const input2 = document.getElementById(file2Id);
+                    
+                    if (input1 && input2) {
+                        // ファイルを一時保存
+                        const tempFiles = input1.files;
+                        const tempName = document.getElementById(`file-${file1Id}`)?.textContent;
+                        
+                        // 入れ替え
+                        input1.files = input2.files;
+                        document.getElementById(`file-${file1Id}`).textContent = 
+                            document.getElementById(`file-${file2Id}`)?.textContent || 'ファイルを選択してください';
+                        
+                        input2.files = tempFiles;
+                        document.getElementById(`file-${file2Id}`).textContent = 
+                            tempName || 'ファイルを選択してください';
+                        
+                        // has-fileクラスの更新
+                        updateFileStatus(file1Id);
+                        updateFileStatus(file2Id);
+                    }
+                });
+                
+                // ラベルの入れ替え
+                const temp = accountMapping[platform][1];
+                accountMapping[platform][1] = accountMapping[platform][2];
+                accountMapping[platform][2] = temp;
+            });
+            
+            showStatus('アカウント1と2を入れ替えました', 'success');
+        }
+        
+        // ファイル選択処理
+        function handleFileSelect(input, id) {
+            const file = input.files[0];
+            if (file) {
+                document.getElementById(`file-${id}`).textContent = file.name;
+                uploadedFiles[id] = file;
+                updateFileStatus(id);
+                showStatus(`${file.name} を選択しました`, 'info');
+            }
+        }
+        
+        // ファイルステータス更新
+        function updateFileStatus(id) {
+            const input = document.getElementById(id);
+            const uploadItem = input?.closest('.upload-item');
+            if (uploadItem) {
+                if (input.files && input.files.length > 0) {
+                    uploadItem.classList.add('has-file');
+                } else {
+                    uploadItem.classList.remove('has-file');
+                }
+            }
+        }
+        
+        // すべてのデータを処理
+        async function processAllData() {
+            showStatus('データを処理中...', 'info');
+            
+            // FormDataを作成
+            const formData = new FormData();
+            
+            // すべてのファイルを追加
+            Object.keys(uploadedFiles).forEach(key => {
+                if (uploadedFiles[key]) {
+                    formData.append(key, uploadedFiles[key]);
+                }
+            });
+            
+            // アカウントマッピング情報を追加
+            formData.append('account_mapping', JSON.stringify(accountMapping));
+            
+            try {
+                const response = await fetch('/api/process_multi_account', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    displayResults(result);
+                    showStatus('処理が完了しました', 'success');
+                } else {
+                    showStatus('処理中にエラーが発生しました', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('通信エラーが発生しました', 'error');
+            }
+        }
+        
+        // 結果表示
+        function displayResults(data) {
+            const resultsSection = document.getElementById('results');
+            const resultsContent = document.getElementById('results-content');
+            
+            let html = '<div class="result-grid">';
+            
+            // 各プラットフォームの結果を表示
+            if (data.amazon) {
+                html += createResultCard('Amazon', data.amazon);
+            }
+            if (data.rakuten) {
+                html += createResultCard('楽天', data.rakuten);
+            }
+            if (data.yahoo) {
+                html += createResultCard('Yahoo!', data.yahoo);
+            }
+            if (data.qoo10) {
+                html += createResultCard('Qoo10', data.qoo10);
+            }
+            if (data.mercari) {
+                html += createResultCard('メルカリShops', data.mercari);
+            }
+            
+            // 合計
+            if (data.total) {
+                html += `
+                    <div class="result-card" style="grid-column: 1 / -1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="result-title" style="color: white;">総合計</div>
+                        <div class="result-value" style="color: white; font-size: 2rem;">
+                            ¥${data.total.toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            
+            resultsContent.innerHTML = html;
+            resultsSection.classList.add('show');
+        }
+        
+        // 結果カード作成
+        function createResultCard(title, data) {
+            const value = data.total || 0;
+            const isNegative = value < 0;
+            
+            let details = '';
+            if (data.account1 !== undefined || data.account2 !== undefined) {
+                details = '<div style="font-size: 0.9rem; margin-top: 10px; color: #7f8c8d;">';
+                if (data.account1 !== undefined) {
+                    details += `<div>アカウント1: ¥${data.account1.toLocaleString()}</div>`;
+                }
+                if (data.account2 !== undefined) {
+                    details += `<div>アカウント2: ¥${data.account2.toLocaleString()}</div>`;
+                }
+                details += '</div>';
+            }
+            
+            return `
+                <div class="result-card">
+                    <div class="result-title">${title}</div>
+                    <div class="result-value ${isNegative ? 'negative' : ''}">
+                        ¥${value.toLocaleString()}
+                    </div>
+                    ${details}
+                </div>
+            `;
+        }
+        
+        // データクリア
+        function clearAllData() {
+            if (confirm('すべてのデータをクリアしますか？')) {
+                // すべてのファイル入力をクリア
+                document.querySelectorAll('.file-input').forEach(input => {
+                    input.value = '';
+                });
+                
+                // ファイル名表示をリセット
+                document.querySelectorAll('[id^="file-"]').forEach(elem => {
+                    elem.textContent = 'ファイルを選択してください';
+                });
+                
+                // has-fileクラスを削除
+                document.querySelectorAll('.upload-item').forEach(item => {
+                    item.classList.remove('has-file');
+                });
+                
+                // アップロードファイルをクリア
+                uploadedFiles = {};
+                
+                // 結果を非表示
+                document.getElementById('results').classList.remove('show');
+                
+                showStatus('データをクリアしました', 'info');
+            }
+        }
+        
+        // ステータスメッセージ表示
+        function showStatus(message, type) {
+            // 既存のステータスメッセージを削除
+            const existing = document.querySelector('.status-message');
+            if (existing) {
+                existing.remove();
+            }
+            
+            // 新しいステータスメッセージを作成
+            const status = document.createElement('div');
+            status.className = `status-message status-${type}`;
+            status.textContent = message;
+            
+            // ヘッダーの後に挿入
+            const mainContent = document.querySelector('.main-content');
+            mainContent.insertBefore(status, mainContent.firstChild);
+            
+            // 3秒後に自動削除
+            setTimeout(() => {
+                status.remove();
+            }, 3000);
+        }
+        
+        // ドラッグ&ドロップ対応
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadItems = document.querySelectorAll('.upload-item');
+            
+            uploadItems.forEach(item => {
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    item.style.borderColor = '#3498db';
+                    item.style.background = '#f0f8ff';
+                });
+                
+                item.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    if (!item.classList.contains('has-file')) {
+                        item.style.borderColor = '#d0d0d0';
+                        item.style.background = '#fafafa';
+                    }
+                });
+                
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const input = item.querySelector('.file-input');
+                    const files = e.dataTransfer.files;
+                    
+                    if (files.length > 0 && input) {
+                        input.files = files;
+                        const event = new Event('change', { bubbles: true });
+                        input.dispatchEvent(event);
+                    }
+                    
+                    if (!item.classList.contains('has-file')) {
+                        item.style.borderColor = '#d0d0d0';
+                        item.style.background = '#fafafa';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -30,10 +30,10 @@ CORS(app)
 # ファイルアップロード設定
 ALLOWED_EXTENSIONS = {'csv'}
 
-# データ保存ディレクトリ
-DATA_DIR = 'monthly_data'
+# データ保存ディレクトリ（Vercel環境では/tmpを使用）
+DATA_DIR = '/tmp/monthly_data' if os.environ.get('VERCEL') else 'monthly_data'
 if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
+    os.makedirs(DATA_DIR, exist_ok=True)
 
 # 対象期間の月リストを生成（2025年7月〜2026年7月）
 def generate_month_list():
@@ -811,6 +811,196 @@ def delete_month_data(month_key):
             'success': False,
             'error': f'月データ削除エラー: {str(e)}'
         }), 500
+
+@app.route('/api/process_multi_account', methods=['POST'])
+def process_multi_account():
+    """複数アカウント対応のデータ処理エンドポイント"""
+    try:
+        # アカウントマッピング情報を取得
+        account_mapping = json.loads(request.form.get('account_mapping', '{}'))
+        
+        results = {
+            'amazon': {'account1': 0, 'account2': 0, 'total': 0},
+            'rakuten': {'account1': 0, 'account2': 0, 'total': 0},
+            'yahoo': {'account1': 0, 'account2': 0, 'total': 0},
+            'qoo10': {'account1': 0, 'account2': 0, 'total': 0},
+            'mercari': {'total': 0}
+        }
+        
+        # 各プラットフォームのファイルを処理
+        platforms = ['amazon', 'rakuten', 'yahoo', 'qoo10']
+        
+        for platform in platforms:
+            for account_num in [1, 2]:
+                # 売上ファイル処理
+                sales_key = f'{platform}-sales-{account_num}'
+                expense_key = f'{platform}-expense-{account_num}'
+                ad_key = f'{platform}-ad-{account_num}'
+                
+                account_total = 0
+                
+                # 売上データ処理
+                if sales_key in request.files:
+                    file = request.files[sales_key]
+                    if file and file.filename:
+                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+                        file.save(temp_file.name)
+                        
+                        try:
+                            # CSVデータ読み込み
+                            data = safe_read_csv(temp_file.name)
+                            
+                            # プラットフォーム別の処理
+                            if platform == 'amazon':
+                                # Amazonの売上処理（既存のロジックを流用）
+                                for row in data:
+                                    if '売上高' in row:
+                                        try:
+                                            amount = str(row.get('売上高', '0')).replace(',', '').replace('¥', '')
+                                            account_total += float(amount) if amount else 0
+                                        except:
+                                            pass
+                            elif platform == 'rakuten':
+                                # 楽天の売上処理
+                                for row in data:
+                                    if '売上金額' in row or '受注金額' in row:
+                                        try:
+                                            key = '売上金額' if '売上金額' in row else '受注金額'
+                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
+                                            account_total += float(amount) if amount else 0
+                                        except:
+                                            pass
+                            elif platform == 'yahoo':
+                                # Yahoo!の売上処理
+                                for row in data:
+                                    if '売上' in row or '注文金額' in row:
+                                        try:
+                                            key = '売上' if '売上' in row else '注文金額'
+                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
+                                            account_total += float(amount) if amount else 0
+                                        except:
+                                            pass
+                            elif platform == 'qoo10':
+                                # Qoo10の売上処理
+                                for row in data:
+                                    if '決済金額' in row or '販売価格' in row:
+                                        try:
+                                            key = '決済金額' if '決済金額' in row else '販売価格'
+                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
+                                            account_total += float(amount) if amount else 0
+                                        except:
+                                            pass
+                        except Exception as e:
+                            logger.error(f"売上データ処理エラー {sales_key}: {e}")
+                        finally:
+                            os.unlink(temp_file.name)
+                
+                # 経費データ処理
+                if expense_key in request.files:
+                    file = request.files[expense_key]
+                    if file and file.filename:
+                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+                        file.save(temp_file.name)
+                        
+                        try:
+                            data = safe_read_csv(temp_file.name)
+                            # 経費を減算
+                            for row in data:
+                                for key in ['経費', '手数料', 'コスト', '費用']:
+                                    if key in row:
+                                        try:
+                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
+                                            account_total -= float(amount) if amount else 0
+                                        except:
+                                            pass
+                        except Exception as e:
+                            logger.error(f"経費データ処理エラー {expense_key}: {e}")
+                        finally:
+                            os.unlink(temp_file.name)
+                
+                # 広告費データ処理（Amazonのみ）
+                if platform == 'amazon' and ad_key in request.files:
+                    file = request.files[ad_key]
+                    if file and file.filename:
+                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+                        file.save(temp_file.name)
+                        
+                        try:
+                            data = safe_read_csv(temp_file.name)
+                            for row in data:
+                                if '広告費' in row or 'スポンサー広告費' in row:
+                                    try:
+                                        key = '広告費' if '広告費' in row else 'スポンサー広告費'
+                                        amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
+                                        account_total -= float(amount) if amount else 0
+                                    except:
+                                        pass
+                        except Exception as e:
+                            logger.error(f"広告データ処理エラー {ad_key}: {e}")
+                        finally:
+                            os.unlink(temp_file.name)
+                
+                # アカウント別の結果を保存
+                account_key = f'account{account_num}'
+                results[platform][account_key] = account_total
+                results[platform]['total'] += account_total
+        
+        # メルカリShopsの処理
+        mercari_key = 'mercari-sales'
+        if mercari_key in request.files:
+            file = request.files[mercari_key]
+            if file and file.filename:
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+                file.save(temp_file.name)
+                
+                try:
+                    data = safe_read_csv(temp_file.name)
+                    mercari_total = 0
+                    for row in data:
+                        if '売上金' in row or '売上' in row:
+                            try:
+                                key = '売上金' if '売上金' in row else '売上'
+                                amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
+                                mercari_total += float(amount) if amount else 0
+                            except:
+                                pass
+                    results['mercari']['total'] = mercari_total
+                except Exception as e:
+                    logger.error(f"メルカリデータ処理エラー: {e}")
+                finally:
+                    os.unlink(temp_file.name)
+        
+        # 総合計を計算
+        total = sum([
+            results['amazon']['total'],
+            results['rakuten']['total'],
+            results['yahoo']['total'],
+            results['qoo10']['total'],
+            results['mercari']['total']
+        ])
+        
+        return jsonify({
+            'success': True,
+            'amazon': results['amazon'],
+            'rakuten': results['rakuten'],
+            'yahoo': results['yahoo'],
+            'qoo10': results['qoo10'],
+            'mercari': results['mercari'],
+            'total': total,
+            'account_mapping': account_mapping
+        })
+    
+    except Exception as e:
+        logger.error(f"複数アカウント処理エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'処理中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    """静的ファイルを提供"""
+    return send_from_directory('static', path)
 
 if __name__ == '__main__':
     debug_mode = os.environ.get('FLASK_ENV') == 'development'

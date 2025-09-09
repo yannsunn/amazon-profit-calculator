@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV利益・経費計算ツール（デバッグ版）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+        .file-input-label {
+            transition: all 0.2s ease-in-out;
+            background-color: #f9fafb;
+        }
+        .file-input-label:hover {
+            background-color: #f3f4f6;
+            border-color: #6366f1;
+        }
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 50;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: visibility 0s, opacity 0.5s linear;
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        .summary-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+        details > summary {
+            cursor: pointer;
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        .debug-log {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">CSV 利益・経費計算ツール（デバッグ版）</h1>
+            <p class="mt-2 text-gray-600">各販路のCSVをアップロードして収支を計算します。</p>
+        </header>
+
+        <!-- Debug Console -->
+        <div class="bg-yellow-50 p-4 rounded-xl shadow-md mb-8">
+            <h2 class="text-lg font-semibold mb-2">デバッグコンソール</h2>
+            <div id="debugLog" class="debug-log"></div>
+        </div>
+
+        <main>
+            <!-- File Upload Section -->
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-2">1. CSVファイルのアップロード</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
+                    <!-- Account 1 -->
+                    <div class="p-4 border rounded-lg space-y-4">
+                        <h3 class="font-semibold text-lg text-center text-indigo-700">アカウント 1</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">マカドCSV</label>
+                            <label for="makadFile1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameMakad1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="makadFile1" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">hanro+ CSV</label>
+                            <label for="hanroFile1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameHanro1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="hanroFile1" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amazon経費CSV</label>
+                            <label for="amazonFile1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameAmazon1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="amazonFile1" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amazon広告CSV</label>
+                            <label for="adFile1" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameAd1" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="adFile1" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                    </div>
+                    <!-- Account 2 -->
+                    <div class="p-4 border rounded-lg space-y-4">
+                        <h3 class="font-semibold text-lg text-center text-teal-700">アカウント 2</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">マカドCSV</label>
+                            <label for="makadFile2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameMakad2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="makadFile2" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">hanro+ CSV</label>
+                            <label for="hanroFile2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameHanro2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="hanroFile2" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amazon経費CSV</label>
+                            <label for="amazonFile2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameAmazon2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="amazonFile2" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amazon広告CSV</label>
+                            <label for="adFile2" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameAd2" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="adFile2" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                    </div>
+                     <!-- Mercari Account -->
+                    <div class="p-4 border rounded-lg space-y-4">
+                        <h3 class="font-semibold text-lg text-center text-rose-700">メルカリShops アカウント</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">メルカリShops CSV</label>
+                            <label for="mercariFile" class="file-input-label flex justify-center w-full px-4 py-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"><div class="text-center"><p id="fileNameMercari" class="text-sm text-gray-600 font-medium">ファイルを選択</p></div><input id="mercariFile" type="file" class="hidden" accept=".csv"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 text-center">
+                    <button id="processBtn" class="w-full md:w-auto bg-indigo-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200 disabled:bg-gray-400">
+                        処理を実行する
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsContainer" class="space-y-12">
+                <div id="finalSummaryResult"></div>
+                <div id="grandTotalResult"></div>
+                <div id="resultAccount1"></div>
+                <div id="resultAccount2"></div>
+                <div id="resultMercari"></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Debug logging function
+        function debugLog(message, data = null) {
+            const debugDiv = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            let logMessage = `[${timestamp}] ${message}`;
+            if (data !== null) {
+                logMessage += `: ${JSON.stringify(data, null, 2)}`;
+            }
+            debugDiv.innerHTML += logMessage + '<br>';
+            console.log(message, data);
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+        }
+
+        const inputs = {
+            acc1: { 
+                makad: { file: document.getElementById('makadFile1'), name: document.getElementById('fileNameMakad1') }, 
+                hanro: { file: document.getElementById('hanroFile1'), name: document.getElementById('fileNameHanro1') }, 
+                amazon: { file: document.getElementById('amazonFile1'), name: document.getElementById('fileNameAmazon1') }, 
+                ad: { file: document.getElementById('adFile1'), name: document.getElementById('fileNameAd1') }, 
+                container: document.getElementById('resultAccount1') 
+            },
+            acc2: { 
+                makad: { file: document.getElementById('makadFile2'), name: document.getElementById('fileNameMakad2') }, 
+                hanro: { file: document.getElementById('hanroFile2'), name: document.getElementById('fileNameHanro2') },
+                amazon: { file: document.getElementById('amazonFile2'), name: document.getElementById('fileNameAmazon2') }, 
+                ad: { file: document.getElementById('adFile2'), name: document.getElementById('fileNameAd2') }, 
+                container: document.getElementById('resultAccount2') 
+            },
+            mercari: {
+                sales: { file: document.getElementById('mercariFile'), name: document.getElementById('fileNameMercari') },
+                container: document.getElementById('resultMercari')
+            }
+        };
+        const processBtn = document.getElementById('processBtn');
+        const toast = document.getElementById('toast');
+
+        let processedDataStore = { acc1: null, acc2: null, mercari: null };
+
+        Object.values(inputs).forEach(acc => {
+            Object.values(acc).forEach(input => {
+                if (input.file) {
+                    input.file.addEventListener('change', () => {
+                        input.name.textContent = input.file.files.length > 0 ? input.file.files[0].name : 'ファイルを選択';
+                    });
+                    setupDragDrop(input.file, input.file.parentElement, input.name);
+                }
+            });
+        });
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => { document.body.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }); });
+        function setupDragDrop(inputElement, labelElement, nameElement) {
+            labelElement.addEventListener('drop', e => {
+                e.preventDefault(); e.stopPropagation();
+                inputElement.files = e.dataTransfer.files;
+                nameElement.textContent = inputElement.files[0].name;
+                labelElement.classList.remove('border-indigo-500', 'bg-indigo-50');
+            });
+            labelElement.addEventListener('dragenter', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                labelElement.classList.add('border-indigo-500', 'bg-indigo-50');
+            });
+            labelElement.addEventListener('dragleave', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                labelElement.classList.remove('border-indigo-500', 'bg-indigo-50');
+            });
+        }
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        function parseCsv(file, encoding = 'UTF-8') {
+            return new Promise((resolve, reject) => {
+                if (!file) {
+                    resolve({data: [], meta: { fields: [] }});
+                    return;
+                }
+                Papa.parse(file, {
+                    encoding: encoding,
+                    header: true,
+                    skipEmptyLines: true,
+                    transformHeader: header => header.trim().replace(/^\uFEFF/, ''),
+                    complete: (results) => {
+                        debugLog(`CSV parsed: ${file.name}`, {
+                            rows: results.data.length,
+                            headers: results.meta.fields
+                        });
+                        resolve(results);
+                    },
+                    error: (error) => reject(error)
+                });
+            });
+        }
+
+        const safeNumber = (val) => {
+            if (val === null || val === undefined) return 0;
+            const cleanString = String(val).replace(/,|¥|円/g, '');
+            return Number(cleanString) || 0;
+        };
+        
+        const HEADER_MAP = {
+            makadOrderDate: ['注文日'], makadProductName: ['商品名'], makadAsin: ['ASIN'], makadSku: ['SKU'], makadShippingRoute: ['配送経路'], makadSalesPrice: ['販売価格'], makadShippingFee: ['送料'], makadPoints: ['ポイント'], makadDiscount: ['割引'], makadCostPrice: ['仕入れ価格'], makadAmazonFee: ['Amazon手数料'], makadGrossProfit: ['粗利'],
+            hanroOrderedAt: ['orderedAt'], hanroSku: ['sku'], hanroItemTitle: ['itemTitle'], hanroQuantity: ['quantity'], hanroAmount: ['amount'], hanroShipmentFee: ['shipmentFee'], hanroCost: ['cost'], hanroProfit: ['profit'], hanroAmazonStatus: ['amazonStatus'],
+            mercariPurchaseDate: ['購入日'], mercariCancelDate: ['キャンセル日'], mercariProductName: ['商品名'], mercariQuantity: ['数量'], mercariSalesProfit: ['販売利益'], mercariSales: ['売上（税込）'], mercariFee: ['販売手数料（税込）'],
+            amazonTransactionType: ['トランザクションの種類'], amazonTransactionDate: ['日付/時間', '日付／時間'], amazonTotal: ['合計'], amazonDescription: ['説明'],
+            adSpend: ['支出', '支出(換算済み)', '支出 (換算済み)', 'Spend', 'spend'],
+        };
+        
+        const normalize = (str) => (str || '').replace(/[\s\u3000()（）]/g, '').toLowerCase();
+
+        function getColumnMapper(actualHeaders) {
+            const mapping = {};
+            for (const internalName in HEADER_MAP) {
+                const possibleNames = HEADER_MAP[internalName];
+                for (const pName of possibleNames) {
+                    const normalizedPName = normalize(pName);
+                    const foundHeader = actualHeaders.find(h => normalize(h) === normalizedPName);
+                    if (foundHeader) {
+                        mapping[internalName] = foundHeader;
+                        break;
+                    }
+                }
+            }
+            debugLog('Column mapping created', mapping);
+            return (row, internalName) => {
+                const header = mapping[internalName];
+                return header ? row[header] : undefined;
+            };
+        }
+
+        async function processAccountData(makadFile, hanroFile, amazonFile, adFile) {
+            const hasAnyFile = makadFile || hanroFile || amazonFile || adFile;
+            if (!hasAnyFile) return null;
+
+            debugLog('Processing account data', {
+                hasMakad: !!makadFile,
+                hasHanro: !!hanroFile,
+                hasAmazon: !!amazonFile,
+                hasAd: !!adFile
+            });
+
+            const [makadResults, hanroResults, amazonResults, adResults] = await Promise.all([
+                parseCsv(makadFile, 'Shift_JIS'),
+                parseCsv(hanroFile, 'Shift_JIS'),
+                parseCsv(amazonFile, 'UTF-8'),
+                parseCsv(adFile, 'UTF-8')
+            ]);
+            
+            const makadData = makadResults.data;
+            const hanroData = hanroResults.data;
+            const amazonData = amazonResults.data;
+            const adData = adResults.data;
+
+            if (makadData.length === 0 && hanroData.length === 0 && amazonData.length === 0 && adData.length === 0) return null;
+
+            let totalSales = 0;
+            let totalGrossProfit = 0;
+            let allOrderDetails = [];
+            const platformSummaries = {};
+            const expenseSummary = {};
+            
+            if (makadData.length > 0 || hanroData.length > 0) {
+                const getMakadValue = getColumnMapper(makadResults.meta.fields);
+                const getHanroValue = getColumnMapper(hanroResults.meta.fields);
+
+                const costLookup = {};
+                makadData.forEach(row => {
+                    const sku = getMakadValue(row, 'makadSku');
+                    const cost = safeNumber(getMakadValue(row, 'makadCostPrice'));
+                    if (sku && cost > 0 && !costLookup[sku]) {
+                        costLookup[sku] = cost;
+                    }
+                });
+
+                const makadOrderDetails = makadData.map(row => ({
+                    '注文日時': getMakadValue(row, 'makadOrderDate') || '', '販売経路': 'マカド', 'SKU': getMakadValue(row, 'makadSku') || '', '商品名': getMakadValue(row, 'makadProductName') || '', '販売金額': safeNumber(getMakadValue(row, 'makadSalesPrice')), '手数料': safeNumber(getMakadValue(row, 'makadAmazonFee')), '仕入れ価格': safeNumber(getMakadValue(row, 'makadCostPrice')), '粗利': safeNumber(getMakadValue(row, 'makadGrossProfit')), 'ステータス': '',
+                }));
+
+                const hanroOrderDetails = hanroData
+                    .filter(row => getHanroValue(row, 'hanroAmazonStatus') !== 'FAILED')
+                    .map(row => {
+                        const sku = getHanroValue(row, 'hanroSku');
+                        let cost = safeNumber(getHanroValue(row, 'hanroCost'));
+                        if (cost === 0 && sku && costLookup[sku]) {
+                            cost = costLookup[sku];
+                        }
+                        const amount = safeNumber(getHanroValue(row, 'hanroAmount'));
+                        const fee = safeNumber(getHanroValue(row, 'hanroShipmentFee'));
+                        const profit = amount - fee - cost;
+                        return {
+                            '注文日時': getHanroValue(row, 'hanroOrderedAt') || '', '販売経路': 'hanro+', 'SKU': sku || '', '商品名': getHanroValue(row, 'hanroItemTitle') || '', '販売金額': amount, '手数料': fee, '仕入れ価格': cost, '粗利': profit, 'ステータス': getHanroValue(row, 'hanroAmazonStatus') || '',
+                        };
+                    });
+                
+                allOrderDetails = [...makadOrderDetails, ...hanroOrderDetails];
+
+                allOrderDetails.forEach(order => {
+                    const platform = order['販売経路'];
+                    if (!platformSummaries[platform]) {
+                        platformSummaries[platform] = { sales: 0, profit: 0, fees: 0, cost: 0 };
+                    }
+                    platformSummaries[platform].sales += order['販売金額'];
+                    platformSummaries[platform].profit += order['粗利'];
+                    platformSummaries[platform].fees += order['手数料'];
+                    platformSummaries[platform].cost += order['仕入れ価格'];
+                });
+
+                totalSales = allOrderDetails.reduce((sum, row) => sum + row['販売金額'], 0);
+                totalGrossProfit = allOrderDetails.reduce((sum, row) => sum + row['粗利'], 0);
+            }
+
+            if (amazonData.length > 0) {
+                 const getAmazonValue = getColumnMapper(amazonResults.meta.fields);
+                 const expenseKeywords = [ 'FBA在庫保管手数料', 'FBA長期在庫保管手数料', 'FBA在庫の返送手数料', 'FBA在庫の返金', 'FBAパートナーキャリア', 'FBAパートナーキャリアの配送料', 'Amazon 経由で購入した配送ラベル' ];
+                 amazonData.forEach(row => {
+                    const transactionType = (getAmazonValue(row, 'amazonTransactionType') || '').trim();
+                    const description = (getAmazonValue(row, 'amazonDescription') || '').trim();
+                    const amount = safeNumber(getAmazonValue(row, 'amazonTotal'));
+                    
+                    const matchedKeyword = expenseKeywords.find(keyword => 
+                        transactionType.includes(keyword) || description.includes(keyword)
+                    );
+                    
+                    if (matchedKeyword) {
+                        if (!expenseSummary[matchedKeyword]) { expenseSummary[matchedKeyword] = 0; }
+                        expenseSummary[matchedKeyword] += amount;
+                    }
+                });
+                debugLog('Amazon expenses processed', expenseSummary);
+            }
+
+            if (adData.length > 0) {
+                debugLog('Processing ad data', {
+                    rows: adData.length,
+                    headers: adResults.meta.fields,
+                    firstRow: adData[0]
+                });
+                
+                const getAdValue = getColumnMapper(adResults.meta.fields);
+                
+                // Check all possible spend columns and their values
+                const spendHeaders = ['支出', '支出(換算済み)', '支出 (換算済み)', 'Spend', 'spend'];
+                let adSpendTotal = 0;
+                let foundColumn = null;
+                
+                for (const header of adResults.meta.fields) {
+                    if (spendHeaders.some(sh => header.includes(sh))) {
+                        foundColumn = header;
+                        adSpendTotal = adData.reduce((sum, row) => {
+                            const value = safeNumber(row[header]);
+                            debugLog(`Ad row value for ${header}`, {rawValue: row[header], parsed: value});
+                            return sum + value;
+                        }, 0);
+                        if (adSpendTotal !== 0) break;
+                    }
+                }
+                
+                debugLog('Ad spend calculation', {
+                    foundColumn,
+                    total: adSpendTotal,
+                    sampleValues: adData.slice(0, 3).map(row => ({
+                        raw: foundColumn ? row[foundColumn] : 'N/A',
+                        parsed: foundColumn ? safeNumber(row[foundColumn]) : 0
+                    }))
+                });
+                
+                if (adSpendTotal !== 0) {
+                    expenseSummary['Amazon広告費'] = -Math.abs(adSpendTotal);
+                    debugLog('Added ad expense', expenseSummary['Amazon広告費']);
+                }
+            }
+            
+            const totalExpenses = Object.values(expenseSummary).reduce((sum, val) => sum + val, 0);
+            const finalProfit = totalGrossProfit + totalExpenses;
+            
+            debugLog('Final calculations', {
+                totalSales,
+                totalGrossProfit,
+                totalExpenses,
+                finalProfit,
+                expenseSummary
+            });
+            
+            return {
+                accountSummary: { totalSales, totalGrossProfit, totalExpenses, finalProfit },
+                platformSummaries,
+                orderDetails: allOrderDetails,
+                expenseSummary
+            };
+        }
+        
+        async function processMercariData(mercariFile) {
+            if (!mercariFile) return null;
+
+            const mercariResults = await parseCsv(mercariFile, 'Shift_JIS');
+            const mercariData = mercariResults.data;
+            if (mercariData.length === 0) return null;
+            
+            const getMercariValue = getColumnMapper(mercariResults.meta.fields);
+            
+            let totalShipping = 0;
+            const orderDetails = mercariData
+                .filter(row => !getMercariValue(row, 'mercariCancelDate'))
+                .map(row => {
+                    const quantity = safeNumber(getMercariValue(row, 'mercariQuantity'));
+                    const shippingFee = 550 * quantity;
+                    totalShipping += shippingFee;
+                    const sales = safeNumber(getMercariValue(row, 'mercariSales'));
+                    const fee = safeNumber(getMercariValue(row, 'mercariFee'));
+                    const profit = sales - fee - shippingFee;
+                    return {
+                        '注文日時': getMercariValue(row, 'mercariPurchaseDate') || '', '販売経路': 'メルカリShops', 'SKU': '', '商品名': getMercariValue(row, 'mercariProductName') || '', '販売金額': sales, '手数料': fee + shippingFee, '仕入れ価格': 0, '粗利': profit, 'ステータス': '購入',
+                    };
+                });
+
+            const totalSales = orderDetails.reduce((sum, row) => sum + row['販売金額'], 0);
+            const totalGrossProfit = orderDetails.reduce((sum, row) => sum + row['粗利'], 0);
+            const totalFees = orderDetails.reduce((sum, row) => sum + row['手数料'], 0);
+            
+            const expenseSummary = {};
+            if (totalShipping > 0) {
+                expenseSummary['配送料'] = -totalShipping;
+            }
+
+            return {
+                 accountSummary: { totalSales, totalGrossProfit, totalExpenses: -totalShipping, finalProfit: totalGrossProfit },
+                 platformSummaries: { 'メルカリShops': { sales: totalSales, profit: totalGrossProfit, fees: totalFees, cost: 0 } },
+                 orderDetails: orderDetails,
+                 expenseSummary
+            };
+        }
+
+        function renderAccountResults(container, data, accountName) {
+            container.innerHTML = '';
+            if (!data || !data.accountSummary) { 
+                container.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md text-center text-gray-500">${accountName}のデータは処理されませんでした。</div>`;
+                return; 
+            }
+            const { accountSummary, platformSummaries, orderDetails, expenseSummary } = data;
+            const finalProfitColor = accountSummary.finalProfit >= 0 ? 'text-green-600' : 'text-red-600';
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold mb-6 text-center">${accountName} 集計結果</h2>
+                        <details class="border rounded-lg p-4 mb-8" open>
+                            <summary class="font-semibold text-xl flex justify-between items-center"><span>アカウントサマリー</span><span class="text-sm text-gray-500">クリックして開閉</span></summary>
+                            <div class="mt-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                                    <div class="summary-card p-4 rounded-lg"><p class="text-sm font-medium text-gray-500">合計売上</p><p class="mt-1 text-2xl font-semibold text-gray-900">${accountSummary.totalSales.toLocaleString()}円</p></div>
+                                    <div class="summary-card p-4 rounded-lg"><p class="text-sm font-medium text-gray-500">粗利合計</p><p class="mt-1 text-2xl font-semibold text-blue-600">${accountSummary.totalGrossProfit.toLocaleString()}円</p></div>
+                                    <div class="summary-card p-4 rounded-lg"><p class="text-sm font-medium text-gray-500">総経費</p><p class="mt-1 text-2xl font-semibold text-red-600">${Math.abs(accountSummary.totalExpenses).toLocaleString()}円</p></div>
+                                    <div class="summary-card p-4 rounded-lg"><p class="text-sm font-medium text-gray-500">最終利益</p><p class="mt-1 text-2xl font-semibold ${finalProfitColor}">${accountSummary.finalProfit.toLocaleString()}円</p></div>
+                                </div>
+                            </div>
+                        </details>
+                        
+                        <div class="grid grid-cols-1 ${Object.keys(platformSummaries).length > 0 && Object.keys(expenseSummary).length > 0 ? 'lg:grid-cols-2' : ''} gap-8 mb-8">
+                            ${Object.keys(platformSummaries).length > 0 ? `
+                            <div>
+                                <h3 class="text-xl font-semibold mb-3">プラットフォーム別サマリー</h3>
+                                <div class="overflow-x-auto border rounded-lg"><table class="min-w-full divide-y divide-gray-200" id="table-platform-${accountName}"></table></div>
+                            </div>` : ''}
+                            ${Object.keys(expenseSummary).length > 0 ? `
+                            <div>
+                                <h3 class="text-xl font-semibold mb-3">経費サマリー</h3>
+                                <div class="overflow-x-auto border rounded-lg"><table class="min-w-full divide-y divide-gray-200" id="table-expenses-${accountName}"></table></div>
+                            </div>` : ''}
+                        </div>
+                        
+                        <details class="border rounded-lg p-4">
+                            <summary class="font-semibold text-xl flex justify-between items-center"><span>売上詳細</span><span class="text-sm text-gray-500">クリックして開閉</span></summary>
+                            <div class="mt-4 overflow-x-auto"><table class="min-w-full divide-y divide-gray-200" id="table-orders-${accountName}"></table></div>
+                        </details>
+                </div>`;
+            renderTable(`table-orders-${accountName}`, orderDetails);
+            renderExpenseSummaryTable(`table-expenses-${accountName}`, expenseSummary);
+            renderPlatformSummaryTable(`table-platform-${accountName}`, platformSummaries);
+        }
+        
+        function renderTable(tableId, data) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            if (data.length === 0) {
+                table.innerHTML = '<tbody><tr><td class="p-4 text-center text-gray-500">該当するデータがありません。</td></tr></tbody>';
+                return;
+            };
+            const headers = Object.keys(data[0]);
+            const thead = `<thead><tr class="bg-gray-50">${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${h}</th>`).join('')}</tr></thead>`;
+            const tbody = `<tbody>${data.map(row => `<tr>${headers.map(h => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${typeof row[h] === 'number' ? row[h].toLocaleString() : (row[h] || '')}</td>`).join('')}</tr>`).join('')}</tbody>`;
+            table.innerHTML = thead + tbody;
+        }
+
+        function renderExpenseSummaryTable(tableId, summaryData) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            if (Object.keys(summaryData).length === 0) {
+                table.innerHTML = '<tbody><tr><td class="p-4 text-center text-gray-500">該当する経費データがありません。</td></tr></tbody>';
+                return;
+            }
+            const headers = ['経費項目', '合計金額'];
+            const thead = `<thead><tr class="bg-gray-50">${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${h}</th>`).join('')}</tr></thead>`;
+            const tbody = `<tbody>${Object.entries(summaryData).map(([key, value]) => `<tr><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${key}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${value.toLocaleString()}円</td></tr>`).join('')}</tbody>`;
+            table.innerHTML = thead + tbody;
+        }
+
+        function renderPlatformSummaryTable(tableId, summaryData) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            if (Object.keys(summaryData).length === 0) {
+                table.innerHTML = '';
+                return;
+            }
+            const headers = ['プラットフォーム', '売上合計', '粗利合計'];
+            const thead = `<thead><tr class="bg-gray-50">${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${h}</th>`).join('')}</tr></thead>`;
+            const tbody = `<tbody>${Object.entries(summaryData).map(([key, value]) => `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${key}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${value.sales.toLocaleString()}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${value.profit.toLocaleString()}</td></tr>`).join('')}</tbody>`;
+            table.innerHTML = thead + tbody;
+        }
+        
+        function renderGrandTotal(allData) {
+            const container = document.getElementById('grandTotalResult');
+            container.innerHTML = '';
+            
+            const validData = allData.filter(d => d && d.accountSummary);
+            if (validData.length === 0) return;
+
+            const grandTotalSales = validData.reduce((sum, d) => sum + d.accountSummary.totalSales, 0);
+            const grandTotalGrossProfit = validData.reduce((sum, d) => sum + d.accountSummary.totalGrossProfit, 0);
+            const grandTotalExpenses = validData.reduce((sum, d) => sum + d.accountSummary.totalExpenses, 0);
+            const grandTotalFinalProfit = validData.reduce((sum, d) => sum + d.accountSummary.finalProfit, 0);
+
+            const finalProfitColor = grandTotalFinalProfit >= 0 ? 'text-green-600' : 'text-red-600';
+
+            container.innerHTML = `
+                <div class="bg-indigo-800 text-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4 text-center">総合計サマリー</h2>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                        <div class="bg-indigo-700 p-4 rounded-lg"><p class="text-sm font-medium text-indigo-200">合計売上</p><p class="mt-1 text-2xl font-semibold">${grandTotalSales.toLocaleString()}円</p></div>
+                        <div class="bg-indigo-700 p-4 rounded-lg"><p class="text-sm font-medium text-indigo-200">粗利合計</p><p class="mt-1 text-2xl font-semibold">${grandTotalGrossProfit.toLocaleString()}円</p></div>
+                        <div class="bg-indigo-700 p-4 rounded-lg"><p class="text-sm font-medium text-indigo-200">総経費</p><p class="mt-1 text-2xl font-semibold">${Math.abs(grandTotalExpenses).toLocaleString()}円</p></div>
+                        <div class="bg-indigo-700 p-4 rounded-lg"><p class="text-sm font-medium text-indigo-200">最終利益</p><p class="mt-1 text-2xl font-semibold ${finalProfitColor}">${grandTotalFinalProfit.toLocaleString()}円</p></div>
+                    </div>
+                </div>`;
+        }
+
+        function renderFinalSummary(allData) {
+            const container = document.getElementById('finalSummaryResult');
+            container.innerHTML = '';
+            
+            const validData = allData.filter(d => d && d.accountSummary);
+            if (validData.length < 1) return;
+
+            const sales = {};
+            const fees = {};
+            const expenses = {};
+            let totalCost = 0;
+
+            allData.forEach((data, index) => {
+                if (!data) return;
+                const accName = index === 0 ? " (アカウント1)" : index === 1 ? " (アカウント2)" : "";
+                
+                if (data.platformSummaries) {
+                    for(const [platform, summary] of Object.entries(data.platformSummaries)) {
+                        sales[platform + accName] = summary.sales;
+                        fees[platform + accName] = summary.fees;
+                        totalCost += summary.cost;
+                    }
+                }
+                if (data.expenseSummary && Object.keys(data.expenseSummary).length > 0) {
+                     for(const [expense, amount] of Object.entries(data.expenseSummary)) {
+                         expenses[expense + accName] = amount;
+                     }
+                } else if(index === 2 && data.accountSummary.totalExpenses !== 0) { // Mercari
+                     expenses["配送料" + accName] = data.accountSummary.totalExpenses;
+                }
+            });
+            
+            const renderList = (title, data) => {
+                if (Object.keys(data).length === 0) return '';
+                return `
+                    <div class="p-4 border rounded-lg">
+                        <h4 class="font-semibold text-lg mb-2 text-center">${title}</h4>
+                        <ul class="divide-y">${Object.entries(data).map(([key, value]) => `<li class="py-1 flex justify-between"><span>${key}</span><span>${value.toLocaleString()}円</span></li>`).join('')}</ul>
+                    </div>`;
+            };
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-bold mb-4 text-center">項目別 合計サマリー</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${renderList('各売上', sales)}
+                        ${renderList('各手数料', fees)}
+                        ${renderList('各経費', expenses)}
+                    </div>
+                     <div class="mt-6 pt-4 border-t text-center">
+                        <h4 class="font-semibold text-lg mb-2">仕入れ値 合計</h4>
+                        <p class="text-2xl font-bold text-gray-800">${totalCost.toLocaleString()}円</p>
+                    </div>
+                </div>`;
+        }
+
+        processBtn.addEventListener('click', async () => {
+            debugLog('Processing started');
+            const hasFiles = Object.values(inputs).some(acc => Object.values(acc).some(inp => inp.file && inp.file.files.length > 0));
+            if (!hasFiles) {
+                showToast('少なくとも1つのCSVファイルを選択してください。');
+                return;
+            }
+
+            processBtn.disabled = true;
+            processBtn.textContent = '処理中...';
+
+            try {
+                processedDataStore.acc1 = await processAccountData(inputs.acc1.makad.file.files[0], inputs.acc1.hanro.file.files[0], inputs.acc1.amazon.file.files[0], inputs.acc1.ad.file.files[0]);
+                processedDataStore.acc2 = await processAccountData(inputs.acc2.makad.file.files[0], inputs.acc2.hanro.file.files[0], inputs.acc2.amazon.file.files[0], inputs.acc2.ad.file.files[0]);
+                processedDataStore.mercari = await processMercariData(inputs.mercari.sales.file.files[0]);
+                
+                renderAccountResults(inputs.acc1.container, processedDataStore.acc1, 'アカウント1');
+                renderAccountResults(inputs.acc2.container, processedDataStore.acc2, 'アカウント2');
+                renderAccountResults(inputs.mercari.container, processedDataStore.mercari, 'メルカリShops');
+
+                const allData = [processedDataStore.acc1, processedDataStore.acc2, processedDataStore.mercari];
+                renderGrandTotal(allData);
+                renderFinalSummary(allData);
+                
+                debugLog('Processing completed successfully');
+                showToast('処理が完了しました。');
+            } catch (error) {
+                console.error('CSV処理エラー:', error);
+                debugLog('Processing error', error.message);
+                showToast('エラーが発生しました。コンソールを確認してください。');
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '処理を実行する';
+            }
+        });
+
+    </script>
+</body>
+</html>

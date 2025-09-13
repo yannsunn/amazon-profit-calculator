@@ -471,6 +471,9 @@ def process_hanro_data(data, account_type='a_m'):
         logger.error(f"販路プラスデータ処理エラー: {e}")
         return {}
 
+# 改善された処理関数をインポート
+from process_expense_ad import process_expense_data_improved, process_ad_data_improved
+
 def process_expense_data(data, account_type='a_m'):
     """経費データ処理（Amazonトランザクションレポート対応）"""
     try:
@@ -845,9 +848,9 @@ def upload_and_calculate():
                 elif 'hanro' in key:
                     results = process_hanro_data(data, account_type)
                 elif 'expense' in key:
-                    results = process_expense_data(data, account_type)
+                    results = process_expense_data_improved(data, account_type)
                 elif 'ad' in key:
-                    results = process_ad_data(data, account_type)
+                    results = process_ad_data_improved(data, account_type)
                 else:
                     continue
                 

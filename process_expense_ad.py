@@ -3,6 +3,7 @@
 
 """
 経費と広告費の処理を改善した関数
+実際のCSV構造に基づいた処理
 """
 
 import logging
@@ -71,35 +72,29 @@ def extract_month_from_date(date_str):
         return "2025-06"
 
 def process_expense_data_improved(data, account_type='a_m'):
-    """改善された経費データ処理"""
+    """
+    改善された経費データ処理
+    実際のカラム構造：
+    - Amazonポイントの費用
+    - その他の手数料カラム（負の値として記録される可能性）
+    - トランザクションの種類による判定
+    """
     try:
         results = {}
         
         if data and len(data) > 0:
-            all_columns = list(data[0].keys())
-            logger.info(f"経費データカラム ({account_type}): 合計 {len(all_columns)} カラム")
+            logger.info(f"経費データ処理開始 ({account_type}): {len(data)} 行")
             
-            # デバッグ: 負の値を持つカラムを探す
-            negative_value_columns = set()
-            for row in data[:10]:  # 最初の10行をチェック
-                for key, value in row.items():
-                    if safe_float_convert(value) < 0:
-                        negative_value_columns.add(key)
-            
-            if negative_value_columns:
-                logger.info(f"負の値を持つカラム: {list(negative_value_columns)[:10]}")
+            # 最初の行のサンプルを出力
+            if len(data) > 0:
+                sample_row = data[0]
+                logger.info(f"経費データサンプル: トランザクションの種類={sample_row.get('トランザクションの種類', 'N/A')}, "
+                          f"Amazonポイントの費用={sample_row.get('Amazonポイントの費用', 'N/A')}")
         
         for row_index, row in enumerate(data):
             try:
-                # 日付を探す
-                date_value = None
-                for key, value in row.items():
-                    clean_key = key.replace('﻿', '').replace('\ufeff', '').strip()
-                    if any(d in clean_key for d in ['日付', '時間', 'date', 'Date', 'Time']):
-                        if value:
-                            date_value = value
-                            break
-                
+                # 日付を取得
+                date_value = row.get('﻿日付/時間', '') or row.get('日付/時間', '')
                 if not date_value:
                     continue
                 
@@ -118,40 +113,47 @@ def process_expense_data_improved(data, account_type='a_m'):
                 
                 account_suffix = 'A-M' if account_type == 'a_m' else 'O-AA'
                 
-                # すべてのカラムから負の値（手数料）を探す
-                for key, value in row.items():
-                    if not value or value == '':
-                        continue
-                    
-                    clean_key = key.replace('﻿', '').replace('\ufeff', '').strip()
-                    num_value = safe_float_convert(value)
-                    
-                    # 負の値は手数料・費用
-                    if num_value < 0:
-                        abs_amount = abs(num_value)
+                # トランザクションの種類を確認
+                transaction_type = row.get('トランザクションの種類', '')
+                description = row.get('説明', '') or row.get('SKU', '')
+                
+                # Amazonポイントの費用を処理
+                point_cost = safe_float_convert(row.get('Amazonポイントの費用', 0))
+                if point_cost != 0:
+                    results[month][f'ポイント費用_{account_suffix}'] += abs(point_cost)
+                    results[month][f'経費合計_{account_suffix}'] += abs(point_cost)
+                    if row_index < 3:
+                        logger.info(f"ポイント費用検出: {point_cost}円")
+                
+                # その他の手数料関連フィールドを処理
+                # 注文以外のトランザクション（返金、手数料など）を探す
+                if transaction_type and '注文' not in transaction_type:
+                    # 商品売上（負の値は返金や手数料）
+                    product_sales = safe_float_convert(row.get('商品売上', 0))
+                    if product_sales < 0:
+                        abs_amount = abs(product_sales)
                         
-                        # トランザクションタイプと説明を取得
-                        transaction_type = row.get('トランザクションの種類', '')
-                        description = row.get('商品の説明', '')
-                        combined = f"{clean_key} {transaction_type} {description}".lower()
-                        
-                        # 分類
-                        if any(term in combined for term in ['fba', 'フルフィルメント', '在庫', '保管', '出荷']):
+                        # トランザクションタイプで分類
+                        if 'FBA' in transaction_type or 'フルフィルメント' in description:
                             results[month][f'FBA手数料_{account_suffix}'] += abs_amount
-                        elif any(term in combined for term in ['成約', 'リファーラル', '販売手数料', 'commission']):
+                        elif '手数料' in transaction_type or 'リファーラル' in transaction_type:
                             results[month][f'Amazon手数料_{account_suffix}'] += abs_amount
-                        elif any(term in combined for term in ['配送', 'shipping', '送料', '発送']):
+                        elif '配送' in transaction_type or '送料' in transaction_type:
                             results[month][f'配送料_{account_suffix}'] += abs_amount
-                        elif any(term in combined for term in ['ポイント', 'point']):
-                            results[month][f'ポイント費用_{account_suffix}'] += abs_amount
                         else:
                             results[month][f'その他経費_{account_suffix}'] += abs_amount
                         
                         results[month][f'経費合計_{account_suffix}'] += abs_amount
                         
-                        # 最初の数行だけログ出力
                         if row_index < 3:
-                            logger.info(f"経費検出: {clean_key} = {num_value} -> {abs_amount}円")
+                            logger.info(f"手数料検出: {transaction_type} = {product_sales}円 -> {abs_amount}円")
+                
+                # 配送料の処理（負の値の場合）
+                shipping_fee = safe_float_convert(row.get('配送料', 0))
+                if shipping_fee < 0:
+                    abs_amount = abs(shipping_fee)
+                    results[month][f'配送料_{account_suffix}'] += abs_amount
+                    results[month][f'経費合計_{account_suffix}'] += abs_amount
                 
             except Exception as e:
                 logger.warning(f"経費データ行{row_index}処理エラー: {e}")
@@ -162,7 +164,10 @@ def process_expense_data_improved(data, account_type='a_m'):
             for key in results[month]:
                 results[month][key] = int(results[month][key])
         
-        logger.info(f"経費データ処理完了: {len(results)} ヶ月分")
+        # 結果のサマリーをログ出力
+        total_expense = sum(v.get(f'経費合計_{account_suffix}', 0) for v in results.values())
+        logger.info(f"経費データ処理完了 ({account_type}): {len(results)} ヶ月分, 総経費: {total_expense}円")
+        
         return results
         
     except Exception as e:
@@ -170,52 +175,31 @@ def process_expense_data_improved(data, account_type='a_m'):
         return {}
 
 def process_ad_data_improved(data, account_type='a_m'):
-    """改善された広告費データ処理"""
+    """
+    改善された広告費データ処理
+    実際のカラム構造：
+    - 支出
+    - 支出 (換算済み)
+    """
     try:
         results = {}
         
         if data and len(data) > 0:
-            all_columns = list(data[0].keys())
-            logger.info(f"広告費データカラム ({account_type}): 合計 {len(all_columns)} カラム")
+            logger.info(f"広告費データ処理開始 ({account_type}): {len(data)} 行")
             
-            # デバッグ: 正の値を持つカラムを探す
-            positive_value_columns = {}
-            for row in data[:10]:  # 最初の10行をチェック
-                for key, value in row.items():
-                    val = safe_float_convert(value)
-                    if 0 < val < 1000000:  # 妥当な範囲の正の値
-                        if key not in positive_value_columns:
-                            positive_value_columns[key] = []
-                        positive_value_columns[key].append(val)
-            
-            # 広告費の候補カラムをログ出力
-            for col, values in positive_value_columns.items():
-                clean_col = col.replace('﻿', '').replace('\ufeff', '').strip()
-                if any(term in clean_col for term in ['支出', 'Spend', '費用', 'Cost', '広告']):
-                    logger.info(f"広告費候補カラム: '{col}' サンプル値: {values[:3]}")
+            # 最初の行のサンプルを出力
+            if len(data) > 0:
+                sample_row = data[0]
+                logger.info(f"広告費データサンプル: 支出={sample_row.get('支出', 'N/A')}, "
+                          f"支出 (換算済み)={sample_row.get('支出 (換算済み)', 'N/A')}")
         
         for row_index, row in enumerate(data):
             try:
-                # 日付を探す
-                date_value = None
-                for key, value in row.items():
-                    clean_key = key.replace('﻿', '').replace('\ufeff', '').strip()
-                    if any(d in clean_key for d in ['日付', '開始', '終了', 'date', 'Date', 'Start', 'End']):
-                        if value:
-                            date_value = value
-                            break
-                
+                # 日付を取得（開始日を優先）
+                date_value = row.get('開始日', '') or row.get('終了日', '')
                 if not date_value:
-                    # 日付形式の値を探す
-                    for value in row.values():
-                        if value and ('/' in str(value) or '-' in str(value)):
-                            try:
-                                test_month = extract_month_from_date(str(value))
-                                if test_month != "2025-06":
-                                    date_value = value
-                                    break
-                            except:
-                                continue
+                    # BOM付きのカラムも試す
+                    date_value = row.get('﻿開始日', '') or row.get('﻿終了日', '')
                 
                 if not date_value:
                     continue
@@ -231,27 +215,27 @@ def process_ad_data_improved(data, account_type='a_m'):
                 
                 account_suffix = 'A-M' if account_type == 'a_m' else 'O-AA'
                 
-                # 広告費を探す
-                ad_spend_found = False
-                for key, value in row.items():
-                    if not value or value == '' or ad_spend_found:
-                        continue
+                # 支出を取得（換算済みを優先）
+                spend_value = 0
+                
+                # 「支出 (換算済み)」を最初に試す
+                spend_converted = row.get('支出 (換算済み)', '')
+                if spend_converted:
+                    spend_value = safe_float_convert(spend_converted)
+                
+                # 値がない場合は「支出」を試す
+                if spend_value == 0:
+                    spend_normal = row.get('支出', '')
+                    if spend_normal:
+                        spend_value = safe_float_convert(spend_normal)
+                
+                # 広告費を集計
+                if spend_value > 0:
+                    results[month][f'スポンサープロダクト広告_{account_suffix}'] += spend_value
+                    results[month][f'広告費合計_{account_suffix}'] += spend_value
                     
-                    clean_key = key.replace('﻿', '').replace('\ufeff', '').strip()
-                    num_value = safe_float_convert(value)
-                    
-                    # 正の値で広告費関連のカラム
-                    if num_value > 0:
-                        if any(term in clean_key for term in ['支出', 'Spend', '費用', 'Cost', '広告費', 'Ad']):
-                            # 除外するカラム
-                            if not any(skip in clean_key for skip in ['日付', 'Date', '率', 'Rate', '%', 'ID', 'インプレッション', 'クリック数', '売上']):
-                                results[month][f'スポンサープロダクト広告_{account_suffix}'] += num_value
-                                results[month][f'広告費合計_{account_suffix}'] += num_value
-                                ad_spend_found = True
-                                
-                                # 最初の数行だけログ出力
-                                if row_index < 3:
-                                    logger.info(f"広告費検出: {clean_key} = {num_value}円")
+                    if row_index < 3:
+                        logger.info(f"広告費検出: キャンペーン={row.get('キャンペーン', 'N/A')}, 支出={spend_value}円")
                 
             except Exception as e:
                 logger.warning(f"広告費データ行{row_index}処理エラー: {e}")
@@ -262,7 +246,10 @@ def process_ad_data_improved(data, account_type='a_m'):
             for key in results[month]:
                 results[month][key] = int(results[month][key])
         
-        logger.info(f"広告費データ処理完了: {len(results)} ヶ月分")
+        # 結果のサマリーをログ出力
+        total_ad_spend = sum(v.get(f'広告費合計_{account_suffix}', 0) for v in results.values())
+        logger.info(f"広告費データ処理完了 ({account_type}): {len(results)} ヶ月分, 総広告費: {total_ad_spend}円")
+        
         return results
         
     except Exception as e:

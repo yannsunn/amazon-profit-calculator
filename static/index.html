@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="description" content="複数のAmazonアカウントと販路のCSVデータを統合し、月次利益を自動計算するWebアプリケーション">
     <meta name="theme-color" content="#3498db">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Amazon利益計算">
     <meta name="format-detection" content="telephone=no">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <title>Amazon売上利益計算システム（完全版）</title>
     <style>
         * {
@@ -1320,6 +1322,22 @@
                             <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
                             <div class="file-name" id="name-hanro-a-m"></div>
                         </div>
+                        
+                        <div class="upload-item" id="upload-expense-a-m" data-file-type="expense-a-m">
+                            <h3>経費データ</h3>
+                            <input type="file" class="file-input" id="file-expense-a-m" accept=".csv">
+                            <label for="file-expense-a-m" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
+                            <div class="file-name" id="name-expense-a-m"></div>
+                        </div>
+                        
+                        <div class="upload-item" id="upload-ad-a-m" data-file-type="ad-a-m">
+                            <h3>広告費データ</h3>
+                            <input type="file" class="file-input" id="file-ad-a-m" accept=".csv">
+                            <label for="file-ad-a-m" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
+                            <div class="file-name" id="name-ad-a-m"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1353,6 +1371,22 @@
                             <label for="file-hanro-o-aa" class="file-label">ファイルを選択</label>
                             <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
                             <div class="file-name" id="name-hanro-o-aa"></div>
+                        </div>
+                        
+                        <div class="upload-item" id="upload-expense-o-aa" data-file-type="expense-o-aa">
+                            <h3>経費データ</h3>
+                            <input type="file" class="file-input" id="file-expense-o-aa" accept=".csv">
+                            <label for="file-expense-o-aa" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
+                            <div class="file-name" id="name-expense-o-aa"></div>
+                        </div>
+                        
+                        <div class="upload-item" id="upload-ad-o-aa" data-file-type="ad-o-aa">
+                            <h3>広告費データ</h3>
+                            <input type="file" class="file-input" id="file-ad-o-aa" accept=".csv">
+                            <label for="file-ad-o-aa" class="file-label">ファイルを選択</label>
+                            <div class="upload-instruction">またはファイルをドラッグ&ドロップ</div>
+                            <div class="file-name" id="name-ad-o-aa"></div>
                         </div>
                     </div>
                 </div>
@@ -1445,6 +1479,35 @@
                     <h3>売上トレンド</h3>
                     <div class="trend-chart" id="trend-chart">
                         <!-- トレンドグラフがここに表示されます -->
+                    </div>
+                </div>
+                
+                <!-- 経費・広告費詳細セクション -->
+                <div class="expense-detail-section" id="expense-detail-section" style="margin: 30px 0;">
+                    <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">経費・広告費 詳細内訳</h3>
+                    
+                    <!-- 経費詳細 -->
+                    <div class="expense-breakdown" style="margin: 20px 0;">
+                        <h4 style="color: #34495e; margin-bottom: 15px;">📊 経費内訳</h4>
+                        <div id="expense-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                            <!-- 経費詳細がここに表示されます -->
+                        </div>
+                    </div>
+                    
+                    <!-- 広告費詳細 -->
+                    <div class="ad-breakdown" style="margin: 20px 0;">
+                        <h4 style="color: #34495e; margin-bottom: 15px;">📣 広告費内訳</h4>
+                        <div id="ad-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                            <!-- 広告費詳細がここに表示されます -->
+                        </div>
+                    </div>
+                    
+                    <!-- 支出サマリー -->
+                    <div class="expense-summary" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="color: #2c3e50; margin-bottom: 15px;">💰 支出サマリー</h4>
+                        <div id="expense-summary-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <!-- 支出サマリーがここに表示されます -->
+                        </div>
                     </div>
                 </div>
                 
@@ -1827,14 +1890,15 @@
 
             // ファイルを FormData に追加
             const fileInputs = [
-                'file-makad-a-m', 'file-mercari', 'file-hanro-a-m',
-                'file-makad-o-aa', 'file-hanro-o-aa'
+                'file-makad-a-m', 'file-hanro-a-m', 'file-expense-a-m', 'file-ad-a-m',
+                'file-mercari',
+                'file-makad-o-aa', 'file-hanro-o-aa', 'file-expense-o-aa', 'file-ad-o-aa'
             ];
 
             fileInputs.forEach(inputId => {
                 const input = document.getElementById(inputId);
                 if (input.files.length > 0) {
-                    const key = inputId.replace('file-', '').replace('-', '_');
+                    const key = inputId.replace('file-', '').replaceAll('-', '_');
                     formData.append(key, input.files[0]);
                     hasFiles = true;
                 }
@@ -1890,14 +1954,15 @@
 
             // ファイルを FormData に追加
             const fileInputs = [
-                'file-makad-a-m', 'file-mercari', 'file-hanro-a-m',
-                'file-makad-o-aa', 'file-hanro-o-aa'
+                'file-makad-a-m', 'file-hanro-a-m', 'file-expense-a-m', 'file-ad-a-m',
+                'file-mercari',
+                'file-makad-o-aa', 'file-hanro-o-aa', 'file-expense-o-aa', 'file-ad-o-aa'
             ];
 
             fileInputs.forEach(inputId => {
                 const input = document.getElementById(inputId);
                 if (input.files.length > 0) {
-                    const key = inputId.replace('file-', '').replace('-', '_');
+                    const key = inputId.replace('file-', '').replaceAll('-', '_');
                     formData.append(key, input.files[0]);
                     hasFiles = true;
                 }
@@ -1917,6 +1982,16 @@
                 });
 
                 const result = await response.json();
+                
+                // デバッグ情報をコンソールに出力
+                if (result.debug_csv_info) {
+                    console.log('=== CSVデバッグ情報 ===');
+                    for (const [key, info] of Object.entries(result.debug_csv_info)) {
+                        console.log(`\n${key}:`);
+                        console.log('カラム名:', info.columns);
+                        console.log('サンプルデータ:', info.sample_row);
+                    }
+                }
 
                 if (result.success) {
                     showMessage(result.message, 'success');
@@ -1933,6 +2008,121 @@
             }
         }
 
+        // 経費・広告費の詳細表示関数
+        function displayExpenseDetails(result) {
+            const expenseDetails = document.getElementById('expense-details');
+            const adDetails = document.getElementById('ad-details');
+            const expenseSummary = document.getElementById('expense-summary-content');
+            
+            // 経費と広告費のデータを集計
+            let expenseData = {
+                'A-M': {
+                    'Amazon手数料': 0, 'FBA手数料': 0, '配送料': 0, 
+                    'ポイント費用': 0, 'その他経費': 0, '合計': 0
+                },
+                'O-AA': {
+                    'Amazon手数料': 0, 'FBA手数料': 0, '配送料': 0,
+                    'ポイント費用': 0, 'その他経費': 0, '合計': 0
+                }
+            };
+            
+            let adData = {
+                'A-M': {
+                    'SP広告': 0, '合計': 0
+                },
+                'O-AA': {
+                    'SP広告': 0, '合計': 0
+                }
+            };
+            
+            // データを集計
+            if (result.spreadsheet_data && result.spreadsheet_data.length > 0) {
+                result.spreadsheet_data.forEach(row => {
+                    // 経費データの集計
+                    Object.keys(row).forEach(key => {
+                        if (key.includes('Amazon手数料_A-M')) expenseData['A-M']['Amazon手数料'] += row[key] || 0;
+                        if (key.includes('FBA手数料_A-M')) expenseData['A-M']['FBA手数料'] += row[key] || 0;
+                        if (key.includes('配送料_A-M')) expenseData['A-M']['配送料'] += row[key] || 0;
+                        if (key.includes('ポイント費用_A-M')) expenseData['A-M']['ポイント費用'] += row[key] || 0;
+                        if (key.includes('その他経費_A-M')) expenseData['A-M']['その他経費'] += row[key] || 0;
+                        if (key.includes('経費合計_A-M')) expenseData['A-M']['合計'] += row[key] || 0;
+                        
+                        if (key.includes('Amazon手数料_O-AA')) expenseData['O-AA']['Amazon手数料'] += row[key] || 0;
+                        if (key.includes('FBA手数料_O-AA')) expenseData['O-AA']['FBA手数料'] += row[key] || 0;
+                        if (key.includes('配送料_O-AA')) expenseData['O-AA']['配送料'] += row[key] || 0;
+                        if (key.includes('ポイント費用_O-AA')) expenseData['O-AA']['ポイント費用'] += row[key] || 0;
+                        if (key.includes('その他経費_O-AA')) expenseData['O-AA']['その他経費'] += row[key] || 0;
+                        if (key.includes('経費合計_O-AA')) expenseData['O-AA']['合計'] += row[key] || 0;
+                        
+                        // 広告費データの集計
+                        if (key.includes('スポンサープロダクト広告_A-M')) adData['A-M']['SP広告'] += row[key] || 0;
+                        if (key.includes('広告費合計_A-M')) adData['A-M']['合計'] += row[key] || 0;
+                        
+                        if (key.includes('スポンサープロダクト広告_O-AA')) adData['O-AA']['SP広告'] += row[key] || 0;
+                        if (key.includes('広告費合計_O-AA')) adData['O-AA']['合計'] += row[key] || 0;
+                    });
+                });
+            }
+            
+            // 経費詳細を表示
+            expenseDetails.innerHTML = '';
+            ['A-M', 'O-AA'].forEach(account => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;';
+                card.innerHTML = `
+                    <h5 style="color: #2c3e50; margin-bottom: 10px;">${account}アカウント</h5>
+                    <table style="width: 100%; font-size: 14px;">
+                        <tr><td>Amazon手数料:</td><td style="text-align: right;">¥${(expenseData[account]['Amazon手数料'] || 0).toLocaleString()}</td></tr>
+                        <tr><td>FBA手数料:</td><td style="text-align: right;">¥${(expenseData[account]['FBA手数料'] || 0).toLocaleString()}</td></tr>
+                        <tr><td>配送料:</td><td style="text-align: right;">¥${(expenseData[account]['配送料'] || 0).toLocaleString()}</td></tr>
+                        <tr><td>ポイント費用:</td><td style="text-align: right;">¥${(expenseData[account]['ポイント費用'] || 0).toLocaleString()}</td></tr>
+                        <tr><td>その他:</td><td style="text-align: right;">¥${(expenseData[account]['その他経費'] || 0).toLocaleString()}</td></tr>
+                        <tr style="border-top: 2px solid #3498db; font-weight: bold;">
+                            <td>合計:</td><td style="text-align: right; color: #e74c3c;">¥${(expenseData[account]['合計'] || 0).toLocaleString()}</td>
+                        </tr>
+                    </table>
+                `;
+                expenseDetails.appendChild(card);
+            });
+            
+            // 広告費詳細を表示
+            adDetails.innerHTML = '';
+            ['A-M', 'O-AA'].forEach(account => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;';
+                card.innerHTML = `
+                    <h5 style="color: #2c3e50; margin-bottom: 10px;">${account}アカウント</h5>
+                    <table style="width: 100%; font-size: 14px;">
+                        <tr><td>SP広告:</td><td style="text-align: right;">¥${(adData[account]['SP広告'] || 0).toLocaleString()}</td></tr>
+                        <tr style="border-top: 2px solid #3498db; font-weight: bold;">
+                            <td>合計:</td><td style="text-align: right; color: #e74c3c;">¥${(adData[account]['合計'] || 0).toLocaleString()}</td>
+                        </tr>
+                    </table>
+                `;
+                adDetails.appendChild(card);
+            });
+            
+            // 支出サマリーを表示
+            const totalExpense = expenseData['A-M']['合計'] + expenseData['O-AA']['合計'];
+            const totalAd = adData['A-M']['合計'] + adData['O-AA']['合計'];
+            const totalCost = totalExpense + totalAd;
+            
+            expenseSummary.innerHTML = `
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;">
+                    <h5 style="color: #856404;">総経費</h5>
+                    <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">¥${totalExpense.toLocaleString()}</div>
+                </div>
+                <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; text-align: center;">
+                    <h5 style="color: #0c5460;">総広告費</h5>
+                    <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">¥${totalAd.toLocaleString()}</div>
+                </div>
+                <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+                    <h5 style="color: #721c24;">総支出</h5>
+                    <div style="font-size: 24px; font-weight: bold; color: #dc3545;">¥${totalCost.toLocaleString()}</div>
+                </div>
+            `;
+        }
+        
         // 結果表示
         function displayResults(result) {
             // 改善されたサマリー表示
@@ -1962,6 +2152,9 @@
                 </div>
             `;
 
+            // 経費・広告費の詳細表示
+            displayExpenseDetails(result);
+            
             // スプレッドシートデータ表示
             const monthlyData = document.getElementById('monthly-data');
             monthlyData.innerHTML = '';
@@ -2000,24 +2193,24 @@
                     let sectionsHtml = '';
                     
                     // 売上高セクション
-                    const salesHtml = salesItems.filter(item => item.value > 0)
-                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${item.value.toLocaleString()}</span></div>`)
+                    const salesHtml = salesItems.filter(item => item.value && item.value > 0)
+                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${(item.value || 0).toLocaleString()}</span></div>`)
                         .join('');
                     if (salesHtml) {
                         sectionsHtml += `<div class="section-title">売上高</div>${salesHtml}`;
                     }
                     
                     // 経費セクション  
-                    const expenseHtml = expenseItems.filter(item => item.value > 0)
-                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${item.value.toLocaleString()}</span></div>`)
+                    const expenseHtml = expenseItems.filter(item => item.value && item.value > 0)
+                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${(item.value || 0).toLocaleString()}</span></div>`)
                         .join('');
                     if (expenseHtml) {
                         sectionsHtml += `<div class="section-title">経費</div>${expenseHtml}`;
                     }
                     
                     // 利益セクション
-                    const profitHtml = profitItems.filter(item => item.value > 0)
-                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${item.value.toLocaleString()}</span></div>`)
+                    const profitHtml = profitItems.filter(item => item.value && item.value > 0)
+                        .map(item => `<div class="data-item"><span class="data-label">${item.label}</span><span class="data-value">¥${(item.value || 0).toLocaleString()}</span></div>`)
                         .join('');
                     if (profitHtml) {
                         sectionsHtml += `<div class="section-title">利益</div>${profitHtml}`;

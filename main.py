@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Amazon売上利益計算システム - デプロイ版（軽量）
-"""
 
 import os
 import tempfile
@@ -11,31 +8,35 @@ import csv
 import io
 import json
 import shutil
+import math
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-# ログ設定
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'amazon-profit-calculator-2024')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
-# CORS設定
 CORS(app)
 
-# ファイルアップロード設定
 ALLOWED_EXTENSIONS = {'csv'}
 
-# データ保存ディレクトリ（Vercel環境では/tmpを使用）
 DATA_DIR = '/tmp/monthly_data' if os.environ.get('VERCEL') else 'monthly_data'
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR, exist_ok=True)
 
-# 対象期間の月リストを生成（2025年7月〜2026年7月）
+def ensure_data_dir():
+    """Ensure data directory exists (for serverless compatibility)"""
+    try:
+        if not os.path.exists(DATA_DIR):
+            os.makedirs(DATA_DIR, exist_ok=True)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to create data directory {DATA_DIR}: {e}")
+        return False
+
 def generate_month_list():
     months = []
     start_date = datetime(2025, 7, 1)
@@ -66,6 +67,9 @@ def allowed_file(filename):
 def save_monthly_data(month_key, uploaded_files, results, spreadsheet_data):
     """月別データを保存"""
     try:
+        if not ensure_data_dir():
+            return False
+            
         month_dir = os.path.join(DATA_DIR, month_key)
         if not os.path.exists(month_dir):
             os.makedirs(month_dir)
@@ -97,6 +101,9 @@ def save_monthly_data(month_key, uploaded_files, results, spreadsheet_data):
 def save_uploaded_files(month_key, file_paths):
     """アップロードされたファイルを月別ディレクトリに保存"""
     try:
+        if not ensure_data_dir():
+            return {}
+            
         month_dir = os.path.join(DATA_DIR, month_key, 'files')
         if not os.path.exists(month_dir):
             os.makedirs(month_dir)
@@ -145,6 +152,8 @@ def get_saved_months():
     """保存済み月データのリストを取得"""
     try:
         saved_months = []
+        if not ensure_data_dir():
+            return []
         if os.path.exists(DATA_DIR):
             for month_key in os.listdir(DATA_DIR):
                 month_path = os.path.join(DATA_DIR, month_key)
@@ -177,15 +186,34 @@ def detect_encoding(file_path):
     
     return 'utf-8'  # デフォルト
 
-def safe_read_csv(file_path):
-    """安全なCSV読み込み（軽量版）"""
+def safe_read_csv(file_path, max_rows=50000):
+    """安全なCSV読み込み（エラー対策強化版）"""
     try:
+        # ファイル存在確認
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"ファイルが見つかりません: {file_path}")
+        
+        # ファイルサイズチェック（50MB制限）
+        file_size = os.path.getsize(file_path)
+        if file_size > 50 * 1024 * 1024:
+            raise ValueError(f"ファイルサイズが大きすぎます: {file_size/1024/1024:.1f}MB")
+        
         encoding = detect_encoding(file_path)
         
-        with open(file_path, 'r', encoding=encoding) as f:
-            # CSVを辞書のリストとして読み込み
+        data = []
+        with open(file_path, 'r', encoding=encoding, errors='replace') as f:
             reader = csv.DictReader(f)
-            data = list(reader)
+            for i, row in enumerate(reader):
+                if i >= max_rows:
+                    logger.warning(f"最大行数 {max_rows} に達しました")
+                    break
+                # 空行をスキップ
+                if row and any(v for v in row.values() if v):
+                    data.append(row)
+        
+        if not data:
+            logger.warning(f"データが空です: {file_path}")
+            return []
         
         logger.info(f"ファイル読み込み成功: {file_path} (エンコーディング: {encoding}, 行数: {len(data)})")
         return data
@@ -193,24 +221,65 @@ def safe_read_csv(file_path):
         logger.error(f"ファイル読み込みエラー: {file_path} - {e}")
         raise
 
-def extract_month_from_date(date_str):
-    """日付文字列から年月を抽出"""
+def safe_float_convert(value):
+    """安全な数値変換"""
     try:
+        if value is None or value == '' or str(value).strip() == '':
+            return 0
+        # 文字列のクリーニング
+        cleaned = str(value).replace(',', '').replace('¥', '').replace('円', '').replace('￥', '').strip()
+        if cleaned.lower() in ['none', 'null', 'nan', '-', '']:
+            return 0
+        return float(cleaned)
+    except (ValueError, TypeError, AttributeError):
+        return 0
+
+def extract_month_from_date(date_str):
+    """日付文字列から年月を抽出（エラー対策強化版）"""
+    try:
+        if not date_str or str(date_str).strip() == '':
+            return "2025-06"
+        
+        date_str = str(date_str).strip()
+        
         # 様々な日付形式に対応
         if '/' in date_str:
             parts = date_str.split('/')
             if len(parts) >= 2:
-                year = parts[0] if len(parts[0]) == 4 else f"20{parts[0]}"
-                month = parts[1].zfill(2)
-                return f"{year}-{month}"
+                try:
+                    # YYYY/MM形式
+                    if len(parts[0]) == 4:
+                        year = int(parts[0])
+                        month = int(parts[1])
+                    # MM/DD/YYYY形式
+                    elif len(parts) == 3 and len(parts[2]) == 4:
+                        month = int(parts[0])
+                        year = int(parts[2])
+                    # YY/MM形式
+                    else:
+                        year = int(f"20{parts[0]}")
+                        month = int(parts[1])
+                    
+                    # 妥当性チェック
+                    if 2020 <= year <= 2030 and 1 <= month <= 12:
+                        return f"{year}-{month:02d}"
+                except (ValueError, IndexError):
+                    pass
         elif '-' in date_str:
             parts = date_str.split('-')
             if len(parts) >= 2:
-                return f"{parts[0]}-{parts[1].zfill(2)}"
+                try:
+                    year = int(parts[0])
+                    month = int(parts[1])
+                    if 2020 <= year <= 2030 and 1 <= month <= 12:
+                        return f"{year}-{month:02d}"
+                except (ValueError, IndexError):
+                    pass
         
         # デフォルト
         return "2025-06"
-    except:
+    except Exception as e:
+        logger.warning(f"日付解析エラー: {date_str} - {e}")
         return "2025-06"
 
 def process_makad_data(data, account_type='a_m'):
@@ -233,30 +302,23 @@ def process_makad_data(data, account_type='a_m'):
             
             if month not in results:
                 results[month] = {
-                    # 売上高セクション
                     'Amazon' if account_type == 'a_m' else 'Amazon2': 0,
                     'メルカリShops': 0,
-                    'バンコ+': 0,
-                    'Yahoo!ショッピング': 0,
-                    'プリマアプリ': 0,
                     
-                    # 経費セクション  
                     'プラットフォーム手数料_Amazon' if account_type == 'a_m' else 'プラットフォーム手数料_Amazon2': 0,
                     'プラットフォーム手数料_メルカリ': 0,
                     '運送費（送料）': 0,
                     
-                    # 利益セクション
                     '売上総利益': 0,
                     '売上高合計': 0
                 }
             
-            # 金額データを抽出
             amazon_key = 'Amazon' if account_type == 'a_m' else 'Amazon2'
             fee_key = 'プラットフォーム手数料_Amazon' if account_type == 'a_m' else 'プラットフォーム手数料_Amazon2'
             
             for key, value in row.items():
                 try:
-                    num_value = float(str(value).replace(',', '').replace('¥', '')) if value else 0
+                    num_value = safe_float_convert(value)
                     
                     if '販売価格' in key:
                         results[month][amazon_key] += num_value
@@ -276,7 +338,6 @@ def process_makad_data(data, account_type='a_m'):
                 except:
                     continue
         
-        # 整数に変換
         for month in results:
             for key in results[month]:
                 results[month][key] = int(results[month][key])
@@ -306,13 +367,9 @@ def process_mercari_data(data):
             
             if month not in results:
                 results[month] = {
-                    # 売上高セクション
                     'Amazon': 0,
                     'Amazon2': 0,
                     'メルカリShops': 0,
-                    'バンコ+': 0,
-                    'Yahoo!ショッピング': 0,
-                    'プリマアプリ': 0,
                     
                     # 経費セクション
                     'プラットフォーム手数料_Amazon': 0,
@@ -320,15 +377,13 @@ def process_mercari_data(data):
                     'プラットフォーム手数料_メルカリ': 0,
                     '運送費（送料）': 0,
                     
-                    # 利益セクション
                     '売上総利益': 0,
                     '売上高合計': 0
                 }
             
-            # 金額データを抽出
             for key, value in row.items():
                 try:
-                    num_value = float(str(value).replace(',', '').replace('¥', '')) if value else 0
+                    num_value = safe_float_convert(value)
                     
                     if '売上' in key and '税込' in key:
                         results[month]['メルカリShops'] += num_value
@@ -342,7 +397,6 @@ def process_mercari_data(data):
                 except:
                     continue
         
-        # 整数に変換
         for month in results:
             for key in results[month]:
                 results[month][key] = int(results[month][key])
@@ -372,13 +426,9 @@ def process_hanro_data(data, account_type='a_m'):
             
             if month not in results:
                 results[month] = {
-                    # 売上高セクション
                     'Amazon': 0,
                     'Amazon2': 0,
                     'メルカリShops': 0,
-                    'バンコ+': 0,
-                    'Yahoo!ショッピング': 0,
-                    'プリマアプリ': 0,
                     
                     # 経費セクション
                     'プラットフォーム手数料_Amazon': 0,
@@ -386,7 +436,6 @@ def process_hanro_data(data, account_type='a_m'):
                     'プラットフォーム手数料_メルカリ': 0,
                     '運送費（送料）': 0,
                     
-                    # 利益セクション
                     '売上総利益': 0,
                     '売上高合計': 0
                 }
@@ -394,18 +443,17 @@ def process_hanro_data(data, account_type='a_m'):
             # 販路情報
             mall = row.get('mall', '').lower()
             
-            # 金額データを抽出
             for key, value in row.items():
                 try:
-                    num_value = float(str(value).replace(',', '').replace('¥', '')) if value else 0
+                    num_value = safe_float_convert(value)
                     
                     if 'netPrice' in key or '価格' in key or '売上' in key:
-                        if mall == 'rakuten':
-                            results[month]['バンコ+'] += num_value
-                        elif mall == 'yahoo':
-                            results[month]['Yahoo!ショッピング'] += num_value
-                        elif mall == 'mercari':
+                        if mall == 'mercari':
                             results[month]['メルカリShops'] += num_value
+                        else:
+                            # Default to Amazon account based on account_type
+                            amazon_key = 'Amazon' if account_type == 'a_m' else 'Amazon2'
+                            results[month][amazon_key] += num_value
                         results[month]['売上高合計'] += num_value
                     elif 'profit' in key or '利益' in key:
                         results[month]['売上総利益'] += num_value
@@ -414,7 +462,6 @@ def process_hanro_data(data, account_type='a_m'):
                 except:
                     continue
         
-        # 整数に変換
         for month in results:
             for key in results[month]:
                 results[month][key] = int(results[month][key])
@@ -422,6 +469,200 @@ def process_hanro_data(data, account_type='a_m'):
         return results
     except Exception as e:
         logger.error(f"販路プラスデータ処理エラー: {e}")
+        return {}
+
+def process_expense_data(data, account_type='a_m'):
+    """経費データ処理（Amazonトランザクションレポート対応）"""
+    try:
+        results = {}
+        
+        # 最初の数行でカラム名をログ出力
+        if data and len(data) > 0:
+            all_columns = list(data[0].keys())
+            logger.info(f"経費データ全カラム ({account_type}): {all_columns}")
+        
+        for row_index, row in enumerate(data):
+            try:
+                # 日付列を探す（BOM付きカラム名にも対応）
+                date_value = None
+                for key, value in row.items():
+                    # BOMを除去してチェック
+                    clean_key = key.replace('﻿', '').strip()
+                    if '日付' in clean_key or '時間' in clean_key:
+                        date_value = value
+                        break
+                
+                if not date_value:
+                    continue
+            
+                month = extract_month_from_date(str(date_value))
+                
+                if month not in results:
+                    account_suffix = 'A-M' if account_type == 'a_m' else 'O-AA'
+                    results[month] = {
+                        f'Amazon手数料_{account_suffix}': 0,
+                        f'FBA手数料_{account_suffix}': 0,
+                        f'配送料_{account_suffix}': 0,
+                        f'ポイント費用_{account_suffix}': 0,
+                        f'その他経費_{account_suffix}': 0,
+                        f'経費合計_{account_suffix}': 0
+                    }
+                
+                # 経費データを詳細に抽出（Amazonトランザクションレポートの実際の構造に基づく）
+                account_suffix = 'A-M' if account_type == 'a_m' else 'O-AA'
+                
+                # トランザクションタイプを確認
+                transaction_type = row.get('トランザクションの種類', '').strip()
+                
+                # 合計金額カラムから手数料を取得（「合計」カラムを使用）
+                total_amount = 0
+                for key in row.keys():
+                    clean_key = key.replace('﻿', '').strip()
+                    if clean_key == '合計':
+                        total_amount = safe_float_convert(row[key])
+                        break
+                
+                # トランザクションタイプに基づいて分類
+                if total_amount < 0:  # 負の値は手数料・費用
+                    abs_amount = abs(total_amount)
+                    
+                    # トランザクションタイプまたは説明から分類
+                    description = row.get('商品の説明', '').strip() + ' ' + transaction_type
+                    
+                    # FBA関連手数料
+                    if any(term in description for term in ['FBA', 'フルフィルメント', '在庫保管', '出荷作業', '配送代行']):
+                        results[month][f'FBA手数料_{account_suffix}'] += abs_amount
+                        results[month][f'経費合計_{account_suffix}'] += abs_amount
+                    # 販売手数料
+                    elif any(term in description for term in ['成約料', 'リファーラル', '販売手数料', 'Commission', '基本成約', 'カテゴリー成約']):
+                        results[month][f'Amazon手数料_{account_suffix}'] += abs_amount
+                        results[month][f'経費合計_{account_suffix}'] += abs_amount
+                    # 配送料
+                    elif any(term in description for term in ['配送', 'Shipping', '送料']):
+                        results[month][f'配送料_{account_suffix}'] += abs_amount
+                        results[month][f'経費合計_{account_suffix}'] += abs_amount
+                    # ポイント
+                    elif any(term in description for term in ['ポイント', 'Points']):
+                        results[month][f'ポイント費用_{account_suffix}'] += abs_amount
+                        results[month][f'経費合計_{account_suffix}'] += abs_amount
+                    # その他の手数料
+                    else:
+                        results[month][f'その他経費_{account_suffix}'] += abs_amount
+                        results[month][f'経費合計_{account_suffix}'] += abs_amount
+            except Exception as e:
+                logger.warning(f"経費データ行{row_index}処理エラー: {e}")
+                continue
+        
+        # 整数に変換
+        for month in results:
+            for key in results[month]:
+                results[month][key] = int(results[month][key])
+        
+        return results
+    except Exception as e:
+        logger.error(f"経費データ処理エラー: {e}")
+        return {}
+
+def process_ad_data(data, account_type='a_m'):
+    """広告費データ処理（Amazon広告レポート対応）"""
+    try:
+        results = {}
+        
+        # 最初の数行でカラム名をログ出力
+        if data and len(data) > 0:
+            all_columns = list(data[0].keys())
+            logger.info(f"広告費データ全カラム ({account_type}): {all_columns}")
+            
+            # デバッグ用：支出関連のカラムを特定
+            spend_columns = [col for col in all_columns if '支出' in col or 'Spend' in col.lower() or 'Cost' in col.lower()]
+            if spend_columns:
+                logger.info(f"支出関連カラム: {spend_columns}")
+        
+        for row_index, row in enumerate(data):
+            try:
+                # 日付列を探す（複数の可能性をチェック）
+                date_value = None
+                date_columns = ['開始日', '終了日', '日付', 'Date', 'Start Date', 'End Date']
+                
+                for col_name in date_columns:
+                    for key in row.keys():
+                        clean_key = key.replace('\ufeff', '').replace('﻿', '').strip()
+                        if col_name in clean_key:
+                            date_value = row[key]
+                            break
+                    if date_value:
+                        break
+                
+                if not date_value:
+                    # 日付列が見つからない場合、最初の日付形式の値を探す
+                    for value in row.values():
+                        if value and ('/' in str(value) or '-' in str(value)):
+                            try:
+                                test_month = extract_month_from_date(str(value))
+                                if test_month != "2025-06":  # デフォルト値でない場合
+                                    date_value = value
+                                    break
+                            except:
+                                continue
+                
+                if not date_value:
+                    continue
+                
+                month = extract_month_from_date(str(date_value))
+                
+                if month not in results:
+                    account_suffix = 'A-M' if account_type == 'a_m' else 'O-AA'
+                    results[month] = {
+                        f'スポンサープロダクト広告_{account_suffix}': 0,
+                        f'広告費合計_{account_suffix}': 0
+                    }
+                
+                account_suffix = 'A-M' if account_type == 'a_m' else 'O-AA'
+                
+                # 支出カラムから広告費を取得（複数の可能性をチェック）
+                spend_value = None
+                spend_columns = ['支出', 'Spend', '費用', 'Cost', '広告費', 'Ad Spend']
+                
+                for col_name in spend_columns:
+                    for key in row.keys():
+                        clean_key = key.replace('\ufeff', '').replace('﻿', '').strip()
+                        if col_name in clean_key:
+                            test_value = safe_float_convert(row[key])
+                            if test_value > 0:  # 正の値のみ
+                                spend_value = test_value
+                                break
+                    if spend_value:
+                        break
+                
+                # 値が見つからない場合、すべての数値カラムをチェック
+                if spend_value is None:
+                    for key, value in row.items():
+                        if value and value != '':
+                            test_value = safe_float_convert(value)
+                            # 妥当な広告費の範囲内の値を探す（1円〜1000万円）
+                            if 1 <= test_value <= 10000000:
+                                clean_key = key.replace('\ufeff', '').replace('﻿', '').strip()
+                                # 日付や率でないことを確認
+                                if not any(skip in clean_key for skip in ['日付', 'Date', '率', 'Rate', '%', 'ID']):
+                                    spend_value = test_value
+                                    logger.info(f"広告費カラム候補: {clean_key} = {test_value}")
+                                    break
+                
+                if spend_value and spend_value > 0:
+                    results[month][f'スポンサープロダクト広告_{account_suffix}'] += spend_value
+                    results[month][f'広告費合計_{account_suffix}'] += spend_value
+            except Exception as e:
+                logger.warning(f"広告費データ行{row_index}処理エラー: {e}")
+                continue
+        
+        # 整数に変換
+        for month in results:
+            for key in results[month]:
+                results[month][key] = int(results[month][key])
+        
+        return results
+    except Exception as e:
+        logger.error(f"広告費データ処理エラー: {e}")
         return {}
 
 def merge_monthly_data(all_results):
@@ -433,13 +674,9 @@ def merge_monthly_data(all_results):
             if month not in merged:
                 # スプレッドシートの全項目を初期化
                 merged[month] = {
-                    # 売上高セクション
                     'Amazon': 0,
                     'Amazon2': 0,
                     'メルカリShops': 0,
-                    'バンコ+': 0,
-                    'Yahoo!ショッピング': 0,
-                    'プリマアプリ': 0,
                     
                     # 経費セクション
                     'プラットフォーム手数料_Amazon': 0,
@@ -447,7 +684,6 @@ def merge_monthly_data(all_results):
                     'プラットフォーム手数料_メルカリ': 0,
                     '運送費（送料）': 0,
                     
-                    # 利益セクション
                     '売上総利益': 0,
                     '売上高合計': 0
                 }
@@ -482,9 +718,6 @@ def convert_to_spreadsheet_format(merged_results):
             'Amazon（A-M）': data.get('Amazon', 0),
             'Amazon2（O-AA）': data.get('Amazon2', 0), 
             'メルカリShops': data.get('メルカリShops', 0),
-            'バンコ+（楽天）': data.get('バンコ+', 0),
-            'Yahoo!ショッピング': data.get('Yahoo!ショッピング', 0),
-            'プリマアプリ': data.get('プリマアプリ', 0),
             
             # 経費セクション
             'プラットフォーム手数料_Amazon': data.get('プラットフォーム手数料_Amazon', 0),
@@ -521,8 +754,24 @@ def convert_to_spreadsheet_format(merged_results):
 def calculate_change_percentage(previous_value, current_value):
     """前月比をパーセンテージで計算"""
     if previous_value == 0:
-        return float('inf') if current_value > 0 else 0
-    return ((current_value - previous_value) / previous_value) * 100
+        return 100 if current_value > 0 else 0  # Infinityの代わりに100%を返す
+    result = ((current_value - previous_value) / previous_value) * 100
+    # NaNやInfinityのチェック
+    if math.isnan(result) or math.isinf(result):
+        return 0
+    return result
+
+def sanitize_for_json(obj):
+    """JSONシリアライズ可能な形式に変換"""
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return 0
+        return obj
+    return obj
 
 @app.route('/')
 def index():
@@ -552,8 +801,9 @@ def upload_and_calculate():
         file_paths = {}
         
         file_keys = [
-            'makad_a_m', 'mercari', 'hanro_a_m',
-            'makad_o_aa', 'hanro_o_aa'
+            'makad_a_m', 'hanro_a_m', 'expense_a_m', 'ad_a_m',
+            'mercari',
+            'makad_o_aa', 'hanro_o_aa', 'expense_o_aa', 'ad_o_aa'
         ]
         
         for key in file_keys:
@@ -569,12 +819,21 @@ def upload_and_calculate():
         if not uploaded_files:
             return jsonify({'error': 'ファイルがアップロードされていません'}), 400
         
-        # データ処理実行
+        # データ処理実行（デバッグ情報付き）
         all_results = []
+        debug_info = {}  # デバッグ情報を収集
         
         for key, file_path in file_paths.items():
             try:
                 data = safe_read_csv(file_path)
+                
+                # デバッグ情報を収集（経費・広告費データの場合）
+                if ('expense' in key or 'ad' in key) and data and len(data) > 0:
+                    debug_info[key] = {
+                        'columns': list(data[0].keys())[:20],  # 最初の20カラム
+                        'sample_row': {k: str(v)[:50] for k, v in list(data[0].items())[:10]}  # サンプルデータ
+                    }
+                    logger.info(f"DEBUG {key} columns: {list(data[0].keys())[:10]}")
                 
                 # アカウントタイプを判定
                 account_type = 'o_aa' if 'o_aa' in key else 'a_m'
@@ -585,6 +844,10 @@ def upload_and_calculate():
                     results = process_mercari_data(data)
                 elif 'hanro' in key:
                     results = process_hanro_data(data, account_type)
+                elif 'expense' in key:
+                    results = process_expense_data(data, account_type)
+                elif 'ad' in key:
+                    results = process_ad_data(data, account_type)
                 else:
                     continue
                 
@@ -618,14 +881,19 @@ def upload_and_calculate():
         # 月別データを保存
         save_success = save_monthly_data(target_month, uploaded_files, merged_results, spreadsheet_data)
         
-        # 一時ファイルを削除
-        for temp_path in file_paths.values():
+        # 一時ファイルを安全に削除
+        for key, temp_path in file_paths.items():
             try:
-                os.unlink(temp_path)
-            except:
-                pass
+                if temp_path and os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                    logger.debug(f"一時ファイル削除: {key}")
+            except PermissionError:
+                logger.warning(f"一時ファイル削除権限エラー: {temp_path}")
+            except Exception as e:
+                logger.error(f"一時ファイル削除エラー: {e}")
         
-        return jsonify({
+        # レスポンスを構築
+        response = {
             'success': True,
             'message': f'{target_month}のデータを処理し、{len(uploaded_files)}個のファイルを保存しました',
             'target_month': target_month,
@@ -634,7 +902,13 @@ def upload_and_calculate():
             'summary': summary,
             'uploaded_files': uploaded_files,
             'saved': save_success
-        })
+        }
+        
+        # デバッグ情報があれば追加
+        if debug_info:
+            response['debug_csv_info'] = debug_info
+        
+        return jsonify(sanitize_for_json(response))
     
     except Exception as e:
         logger.error(f"処理エラー: {e}")
@@ -682,12 +956,16 @@ def validate_files():
                     'message': 'ファイル形式に問題があります'
                 }
         
-        # 一時ファイルを削除
-        for temp_path in file_paths.values():
+        # 一時ファイルを安全に削除
+        for key, temp_path in file_paths.items():
             try:
-                os.unlink(temp_path)
-            except:
-                pass
+                if temp_path and os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                    logger.debug(f"一時ファイル削除: {key}")
+            except PermissionError:
+                logger.warning(f"一時ファイル削除権限エラー: {temp_path}")
+            except Exception as e:
+                logger.error(f"一時ファイル削除エラー: {e}")
         
         return jsonify({
             'success': True,
@@ -746,12 +1024,29 @@ def get_month_data(month_key):
         month_info = next((m for m in MONTH_LIST if m['key'] == month_key), None)
         display_name = month_info['display'] if month_info else month_key
         
-        return jsonify({
+        # デバッグ用: 保存されているデータの構造を確認
+        debug_info = {}
+        if 'results' in data and data['results']:
+            # 経費・広告費データのキーを確認
+            for month, month_data in data['results'].items():
+                for key in month_data.keys():
+                    if '経費' in key or '広告' in key or 'A-M' in key or 'O-AA' in key:
+                        if month not in debug_info:
+                            debug_info[month] = []
+                        debug_info[month].append(key)
+        
+        response = {
             'success': True,
             'month_key': month_key,
             'display_name': display_name,
             'data': data
-        })
+        }
+        
+        if debug_info:
+            response['debug_keys'] = debug_info
+            logger.info(f"保存済みデータのキー構造 ({month_key}): {debug_info}")
+        
+        return jsonify(response)
     except Exception as e:
         logger.error(f"月データ取得エラー {month_key}: {e}")
         return jsonify({
@@ -812,195 +1107,51 @@ def delete_month_data(month_key):
             'error': f'月データ削除エラー: {str(e)}'
         }), 500
 
-@app.route('/api/process_multi_account', methods=['POST'])
-def process_multi_account():
-    """複数アカウント対応のデータ処理エンドポイント"""
+
+@app.route('/api/debug/check-saved-data', methods=['GET'])
+def debug_check_saved_data():
+    """保存済みデータの構造を確認（デバッグ用）"""
     try:
-        # アカウントマッピング情報を取得
-        account_mapping = json.loads(request.form.get('account_mapping', '{}'))
+        # 2025-08のデータを確認
+        data = load_monthly_data('2025-08')
+        if not data:
+            return jsonify({'error': '2025-08のデータが見つかりません'}), 404
         
-        results = {
-            'amazon': {'account1': 0, 'account2': 0, 'total': 0},
-            'rakuten': {'account1': 0, 'account2': 0, 'total': 0},
-            'yahoo': {'account1': 0, 'account2': 0, 'total': 0},
-            'qoo10': {'account1': 0, 'account2': 0, 'total': 0},
-            'mercari': {'total': 0}
+        debug_info = {
+            'uploaded_files': data.get('uploaded_files', {}),
+            'results_keys': list(data.get('results', {}).keys()) if 'results' in data else [],
+            'spreadsheet_columns': [],
+            'expense_ad_keys': []
         }
         
-        # 各プラットフォームのファイルを処理
-        platforms = ['amazon', 'rakuten', 'yahoo', 'qoo10']
+        # スプレッドシートデータのカラムを確認
+        if 'spreadsheet_data' in data and data['spreadsheet_data']:
+            first_row = data['spreadsheet_data'][0] if isinstance(data['spreadsheet_data'], list) else {}
+            debug_info['spreadsheet_columns'] = list(first_row.keys())
         
-        for platform in platforms:
-            for account_num in [1, 2]:
-                # 売上ファイル処理
-                sales_key = f'{platform}-sales-{account_num}'
-                expense_key = f'{platform}-expense-{account_num}'
-                ad_key = f'{platform}-ad-{account_num}'
-                
-                account_total = 0
-                
-                # 売上データ処理
-                if sales_key in request.files:
-                    file = request.files[sales_key]
-                    if file and file.filename:
-                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
-                        file.save(temp_file.name)
-                        
-                        try:
-                            # CSVデータ読み込み
-                            data = safe_read_csv(temp_file.name)
-                            
-                            # プラットフォーム別の処理
-                            if platform == 'amazon':
-                                # Amazonの売上処理（既存のロジックを流用）
-                                for row in data:
-                                    if '売上高' in row:
-                                        try:
-                                            amount = str(row.get('売上高', '0')).replace(',', '').replace('¥', '')
-                                            account_total += float(amount) if amount else 0
-                                        except:
-                                            pass
-                            elif platform == 'rakuten':
-                                # 楽天の売上処理
-                                for row in data:
-                                    if '売上金額' in row or '受注金額' in row:
-                                        try:
-                                            key = '売上金額' if '売上金額' in row else '受注金額'
-                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
-                                            account_total += float(amount) if amount else 0
-                                        except:
-                                            pass
-                            elif platform == 'yahoo':
-                                # Yahoo!の売上処理
-                                for row in data:
-                                    if '売上' in row or '注文金額' in row:
-                                        try:
-                                            key = '売上' if '売上' in row else '注文金額'
-                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
-                                            account_total += float(amount) if amount else 0
-                                        except:
-                                            pass
-                            elif platform == 'qoo10':
-                                # Qoo10の売上処理
-                                for row in data:
-                                    if '決済金額' in row or '販売価格' in row:
-                                        try:
-                                            key = '決済金額' if '決済金額' in row else '販売価格'
-                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
-                                            account_total += float(amount) if amount else 0
-                                        except:
-                                            pass
-                        except Exception as e:
-                            logger.error(f"売上データ処理エラー {sales_key}: {e}")
-                        finally:
-                            os.unlink(temp_file.name)
-                
-                # 経費データ処理
-                if expense_key in request.files:
-                    file = request.files[expense_key]
-                    if file and file.filename:
-                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
-                        file.save(temp_file.name)
-                        
-                        try:
-                            data = safe_read_csv(temp_file.name)
-                            # 経費を減算
-                            for row in data:
-                                for key in ['経費', '手数料', 'コスト', '費用']:
-                                    if key in row:
-                                        try:
-                                            amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
-                                            account_total -= float(amount) if amount else 0
-                                        except:
-                                            pass
-                        except Exception as e:
-                            logger.error(f"経費データ処理エラー {expense_key}: {e}")
-                        finally:
-                            os.unlink(temp_file.name)
-                
-                # 広告費データ処理（Amazonのみ）
-                if platform == 'amazon' and ad_key in request.files:
-                    file = request.files[ad_key]
-                    if file and file.filename:
-                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
-                        file.save(temp_file.name)
-                        
-                        try:
-                            data = safe_read_csv(temp_file.name)
-                            for row in data:
-                                if '広告費' in row or 'スポンサー広告費' in row:
-                                    try:
-                                        key = '広告費' if '広告費' in row else 'スポンサー広告費'
-                                        amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
-                                        account_total -= float(amount) if amount else 0
-                                    except:
-                                        pass
-                        except Exception as e:
-                            logger.error(f"広告データ処理エラー {ad_key}: {e}")
-                        finally:
-                            os.unlink(temp_file.name)
-                
-                # アカウント別の結果を保存
-                account_key = f'account{account_num}'
-                results[platform][account_key] = account_total
-                results[platform]['total'] += account_total
+        # 経費・広告費関連のキーを抽出
+        if 'results' in data and data['results']:
+            for month, month_data in data['results'].items():
+                for key in month_data.keys():
+                    if any(term in key for term in ['経費', '広告', '仕入', '送料', 'スポンサー', 'A-M', 'O-AA']):
+                        if key not in debug_info['expense_ad_keys']:
+                            debug_info['expense_ad_keys'].append(key)
         
-        # メルカリShopsの処理
-        mercari_key = 'mercari-sales'
-        if mercari_key in request.files:
-            file = request.files[mercari_key]
-            if file and file.filename:
-                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
-                file.save(temp_file.name)
-                
-                try:
-                    data = safe_read_csv(temp_file.name)
-                    mercari_total = 0
-                    for row in data:
-                        if '売上金' in row or '売上' in row:
-                            try:
-                                key = '売上金' if '売上金' in row else '売上'
-                                amount = str(row.get(key, '0')).replace(',', '').replace('¥', '')
-                                mercari_total += float(amount) if amount else 0
-                            except:
-                                pass
-                    results['mercari']['total'] = mercari_total
-                except Exception as e:
-                    logger.error(f"メルカリデータ処理エラー: {e}")
-                finally:
-                    os.unlink(temp_file.name)
-        
-        # 総合計を計算
-        total = sum([
-            results['amazon']['total'],
-            results['rakuten']['total'],
-            results['yahoo']['total'],
-            results['qoo10']['total'],
-            results['mercari']['total']
-        ])
+        logger.info(f"デバッグ情報: {json.dumps(debug_info, ensure_ascii=False, indent=2)}")
         
         return jsonify({
             'success': True,
-            'amazon': results['amazon'],
-            'rakuten': results['rakuten'],
-            'yahoo': results['yahoo'],
-            'qoo10': results['qoo10'],
-            'mercari': results['mercari'],
-            'total': total,
-            'account_mapping': account_mapping
+            'debug_info': debug_info,
+            'message': '保存済みデータの構造を確認しました。'
         })
-    
     except Exception as e:
-        logger.error(f"複数アカウント処理エラー: {e}")
-        return jsonify({
-            'success': False,
-            'error': f'処理中にエラーが発生しました: {str(e)}'
-        }), 500
+        logger.error(f"デバッグエラー: {e}")
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/static/<path:path>')
-def serve_static(path):
-    """静的ファイルを提供"""
-    return send_from_directory('static', path)
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """静的ファイルの配信"""
+    return send_from_directory('static', filename)
 
 if __name__ == '__main__':
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
